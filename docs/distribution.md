@@ -14,6 +14,14 @@ The same download includes the app, CLI and AI skill. Launch at login turns on
 after helper approval. You can turn it off; it never starts a keep-awake session.
 Enable **Allow CLI & AI tasks** to use the [terminal and AI integrations](cli.md).
 
+**Keep awake with lid closed** is the main switch. Turning it on starts protection
+immediately without a timer; turning it off ends all Awake sessions, including
+CLI sessions, while their commands continue. Power-source, battery and temperature
+limits still apply. The caption distinguishes active protection, waiting for power
+and unconfirmed restoration. For a timer, date or process, choose a stop condition
+and click **Start session** instead. Protection ends on app quit and does not
+automatically resume at login, after cooling or after a battery cutoff.
+
 If macOS blocks opening, use **System Settings → Privacy & Security → Open Anyway**
 when offered. [Apple's instructions](https://support.apple.com/en-gb/102445).
 

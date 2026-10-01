@@ -158,6 +158,46 @@ import ServiceManagement
     var ownSession: SessionSummary? {
         status?.sessions.first(where: { $0.belongsToClient && $0.kind == .manual })
     }
+    var closedLidAwakeEnabled: Bool {
+        status.map { !$0.sessions.isEmpty || $0.sleep.ownsGlobalHold } ?? false
+    }
+    var canToggleClosedLidAwake: Bool {
+        canControl && !busy && !updating && !quitting
+            && (closedLidAwakeEnabled
+                || (status?.sleep.fault == nil && status?.sleep.observed == .allowed
+                    && status?.power.thermal.allowsAwake == true))
+    }
+    var closedLidExplanation: String {
+        guard connectionError == nil else {
+            return "State unavailable. Reconnect before changing closed-lid sleep."
+        }
+        guard let status else {
+            return "Enable Awake below to control closed-lid sleep."
+        }
+        if status.sleep.ownsGlobalHold && status.sleep.phase != .active {
+            return "Protection is not confirmed. Turn off to restore normal sleep."
+        }
+        if status.sleep.observed == .unknown {
+            return "State unavailable. Closed-lid protection has not been confirmed."
+        }
+        if status.sleep.fault != nil {
+            return "Resolve the power issue above before enabling protection."
+        }
+        if !status.sessions.isEmpty {
+            guard presentation == .active else {
+                return
+                    "Protection is waiting for power. Closing the lid can still put this Mac to sleep."
+            }
+            let hasStopCondition =
+                status.policy.maximumDuration != nil
+                || status.sessions.contains { $0.end != .unlimited }
+                || watchedProcesses != nil
+            return hasStopCondition
+                ? "Active for the current session, until its stop condition or you turn this off."
+                : "On until you turn it off. Battery and temperature limits still apply."
+        }
+        return "Turn on now, without a timer. Turning off ends all Awake sessions."
+    }
     var taskCount: Int {
         (status?.sessions.filter { $0.kind != .manual }.count ?? 0)
             + (watchedProcesses?.count ?? 0)
@@ -569,6 +609,18 @@ import ServiceManagement
     func stopManual() async {
         guard let session = ownSession else { return }
         if await perform(.stop(session.id)) { watchedProcesses = nil }
+    }
+
+    func setClosedLidAwake(_ enabled: Bool) async {
+        guard canToggleClosedLidAwake else { return }
+        if enabled {
+            guard !closedLidAwakeEnabled else { return }
+            _ = await perform(.start(SessionRequest(end: .unlimited)))
+        } else {
+            guard closedLidAwakeEnabled else { return }
+            guard await perform(.stopAll) else { return }
+            if status?.sleep.ownsGlobalHold == true { await retryRestoration() }
+        }
     }
 
     func stopAll() async { _ = await perform(.stopAll) }

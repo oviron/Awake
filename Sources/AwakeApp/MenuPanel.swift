@@ -27,19 +27,8 @@ struct MenuPanel: View {
             .frame(height: min(contentHeight.wrappedValue, maximumBodyHeight))
             Divider()
             HStack(spacing: 8) {
-                HStack(spacing: 0) {
-                    Text(
-                        "\(AwakeIdentity.version) · © 2026 "
-                    )
-                    Link(
-                        "Arthur Barreau",
-                        destination: URL(string: "https://www.linkedin.com/in/arthurbarreau/")!
-                    )
-                    .foregroundStyle(Color(nsColor: .linkColor))
-                    .accessibilityLabel("Arthur Barreau on LinkedIn").help(
-                        "Arthur Barreau on LinkedIn")
-                    Text(" · MIT")
-                }.font(.caption2).foregroundStyle(.secondary)
+                Text("Awake \(AwakeIdentity.version) · MIT")
+                    .font(.caption2).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
                 Link(destination: URL(string: "https://github.com/oviron/Awake")!) {
                     Image(nsImage: BrandArt.github).frame(width: 20, height: 20)
@@ -69,6 +58,7 @@ struct MenuPanel: View {
                 Spacer()
             }
             statusOverview
+            closedLidControl
             if model.removalInProgress {
                 Text("Uninstall pending. Right-click the icon to retry.").font(.callout)
             }
@@ -85,6 +75,23 @@ struct MenuPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }.padding(20)
+    }
+
+    private var closedLidControl: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Toggle(
+                "Keep awake with lid closed",
+                isOn: Binding(
+                    get: { model.closedLidAwakeEnabled },
+                    set: { enabled in Task { await model.setClosedLidAwake(enabled) } })
+            )
+            .toggleStyle(.switch).controlSize(.regular)
+            .disabled(!model.canToggleClosedLidAwake)
+            .help("Turn on immediately without a timer. Turn off to end all Awake sessions.")
+            Text(model.closedLidExplanation)
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var statusOverview: some View {
@@ -194,7 +201,7 @@ struct MenuPanel: View {
         let button = Button {
             Task { await model.startManual() }
         } label: {
-            Label(model.busy ? "Verifying…" : "Keep awake", systemImage: "power")
+            Label(model.busy ? "Verifying…" : "Start session", systemImage: "timer")
                 .frame(maxWidth: .infinity)
         }.controlSize(.large)
         if model.status?.power.thermal.allowsAwake == false {

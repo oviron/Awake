@@ -262,6 +262,27 @@ private func status(
         #expect(!model.showsTaskCount)
     }
 
+    @Test @MainActor func closedLidSwitchDistinguishesRequestsFromConfirmedProtection() {
+        let inactive = AppModel.preview("inactive")
+        #expect(!inactive.closedLidAwakeEnabled)
+        #expect(inactive.closedLidExplanation.contains("without a timer"))
+        let active = AppModel.preview("active")
+        #expect(active.closedLidAwakeEnabled)
+        #expect(active.closedLidExplanation.contains("stop condition"))
+        let suspended = AppModel.preview("suspended")
+        #expect(suspended.closedLidAwakeEnabled)
+        #expect(suspended.closedLidExplanation.contains("can still put this Mac to sleep"))
+        let restoring = AppModel.preview("restoration")
+        #expect(restoring.closedLidAwakeEnabled)
+        #expect(restoring.closedLidExplanation.contains("not confirmed"))
+        let unknown = AppModel.preview("unknown")
+        #expect(!unknown.closedLidAwakeEnabled)
+        #expect(unknown.closedLidExplanation.contains("not been confirmed"))
+        for state in ["setup", "removed", "thermal", "battery-low"] {
+            #expect(!AppModel.preview(state).closedLidAwakeEnabled)
+        }
+    }
+
     @Test @MainActor func startupNeverGrantsControlBeforeBuildVerification() async {
         let model = AppModel()
         #expect(model.buildTrust == .checking)
@@ -375,6 +396,8 @@ private func status(
         await model.prepareForLaunch()
         #expect(model.buildTrust == .untrusted)
         await model.stopAll()
+        await model.setClosedLidAwake(false)
+        await model.setClosedLidAwake(true)
         await model.setAutomation(false)
         await model.setSudoTouchID(true)
         await model.setSudoTouchID(false)
