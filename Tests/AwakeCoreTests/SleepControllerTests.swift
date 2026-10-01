@@ -253,3 +253,115 @@ func unownedStateCannotBeAdoptedOrOverwritten(_ observation: SleepObservation) t
     #expect(invalidated.fault == .interrupted && !invalidated.ownsGlobalHold)
     #expect(backend.writes == [true, false])
 }
+
+@Test func ordinaryKeepAwakeDoesNotChangeClosedLidSleep() throws {
+    var controller = SleepController(restoringOwnedHold: false)
+    var backend = TestBackend()
+    var journal = TestJournal()
+    let on = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: false, now: try instant(),
+        backend: &backend, journal: &journal)
+    #expect(on.phase == .active && on.holdsIdleAssertion && on.observed == .allowed)
+    #expect(!on.ownsGlobalHold && backend.writes.isEmpty && journal.claims.isEmpty)
+    let off = controller.reconcile(
+        wantsAwake: false, preventsLidSleep: false, now: try instant(20),
+        backend: &backend, journal: &journal)
+    #expect(off.phase == .inactive && !off.holdsIdleAssertion && !backend.hasIdleAssertion)
+    #expect(backend.writes.isEmpty && journal.claims.isEmpty)
+}
+
+@Test func lidRuleChangesPreserveTheActiveIdleAssertion() throws {
+    var controller = SleepController(restoringOwnedHold: false)
+    var backend = TestBackend()
+    var journal = TestJournal()
+    _ = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: false, now: try instant(),
+        backend: &backend, journal: &journal)
+    let closed = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: true, now: try instant(11),
+        backend: &backend, journal: &journal)
+    #expect(closed.phase == .active && closed.ownsGlobalHold && closed.holdsIdleAssertion)
+    let normal = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: false, now: try instant(12),
+        backend: &backend, journal: &journal)
+    #expect(normal.phase == .active && !normal.ownsGlobalHold && normal.holdsIdleAssertion)
+    #expect(normal.observed == .allowed && controller.recoveryAttempts == 0)
+    #expect(backend.writes == [true, false] && journal.claims == [true, false])
+}
+
+@Test func idleLidPreferenceAloneNeverDisablesSleep() throws {
+    var controller = SleepController(restoringOwnedHold: false)
+    var backend = TestBackend()
+    var journal = TestJournal()
+    let report = controller.reconcile(
+        wantsAwake: false, preventsLidSleep: true, now: try instant(),
+        backend: &backend, journal: &journal)
+    #expect(report.phase == .inactive && !report.holdsIdleAssertion && !report.ownsGlobalHold)
+    #expect(backend.writes.isEmpty && journal.claims.isEmpty)
+}
+
+@Test func failedLidRuleRestorationNeverReportsOrdinaryProtectionAsActive() throws {
+    var controller = SleepController(restoringOwnedHold: false)
+    var backend = TestBackend()
+    var journal = TestJournal()
+    _ = controller.reconcile(
+        wantsAwake: true, now: try instant(), backend: &backend, journal: &journal)
+    backend.failsDisable = true
+    let result = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: false, now: try instant(20),
+        backend: &backend, journal: &journal)
+    #expect(result.fault == .restorationFailed && result.phase == .restoring)
+    #expect(result.ownsGlobalHold && !result.holdsIdleAssertion)
+    #expect(journal.claims == [true])
+}
+
+@Test func idleOnlyRestorationFailuresAreBoundedWithoutGlobalWrites() throws {
+    var controller = SleepController(restoringOwnedHold: false)
+    var backend = TestBackend()
+    var journal = TestJournal()
+    _ = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: false, now: try instant(),
+        backend: &backend, journal: &journal)
+    backend.failsAssertion = true
+    for second in [20.0, 22, 26, 100] {
+        let result = controller.reconcile(
+            wantsAwake: false, preventsLidSleep: false, now: try instant(second),
+            backend: &backend, journal: &journal)
+        #expect(result.holdsIdleAssertion && !result.ownsGlobalHold)
+        #expect(result.fault == .restorationFailed && result.phase != .inactive)
+    }
+    backend.failsAssertion = false
+    controller.retryRestoration()
+    let restored = controller.reconcile(
+        wantsAwake: false, preventsLidSleep: false, now: try instant(110),
+        backend: &backend, journal: &journal)
+    #expect(!restored.holdsIdleAssertion && restored.observed == .allowed)
+    #expect(backend.writes.isEmpty && journal.claims.isEmpty)
+}
+
+@Test func failedIdleReleaseCannotBeRearmedOrRemovedEvenAfterAssertionDisappears() throws {
+    var controller = SleepController(restoringOwnedHold: false)
+    var backend = TestBackend()
+    var journal = TestJournal()
+    _ = controller.reconcile(
+        wantsAwake: true, preventsLidSleep: false, now: try instant(),
+        backend: &backend, journal: &journal)
+    backend.hasIdleAssertion = false
+    backend.failsAssertion = true
+    let failed = controller.reconcile(
+        wantsAwake: false, preventsLidSleep: false, now: try instant(20),
+        backend: &backend, journal: &journal)
+    #expect(failed.restorationPending && !failed.holdsIdleAssertion && !failed.ownsGlobalHold)
+    #expect(throws: SleepFault.restorationPending) { try controller.rearm() }
+    let status = ServiceStatus(
+        policy: try UserPolicy(), power: .init(source: .external, battery: .notPresent),
+        sleep: failed, sessions: [], sampledAt: Date(), removal: .ready)
+    #expect(!status.canRemoveService)
+    backend.failsAssertion = false
+    controller.retryRestoration()
+    let restored = controller.reconcile(
+        wantsAwake: false, preventsLidSleep: false, now: try instant(30),
+        backend: &backend, journal: &journal)
+    #expect(!restored.restorationPending)
+    try controller.rearm()
+}

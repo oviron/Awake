@@ -15,6 +15,7 @@ import ServiceManagement
     private(set) var sudoTouchIDBusy = false
     private(set) var connectionError: String?
     private(set) var helperStatus: SMAppService.Status = .notRegistered
+    private(set) var needsHelperUpdate = false
     private(set) var loginStatus: SMAppService.Status = .notRegistered
     private(set) var buildTrust = BuildTrust.checking
     var trustedBuild: Bool { buildTrust == .trusted }
@@ -37,7 +38,16 @@ import ServiceManagement
     private(set) var sudoTouchIDError: ServiceError?
     var pendingSudoTouchID: Bool?
     var draft = PolicyDraft()
-    var stopChoice: StopChoice = .preset(60)
+    var stopChoice: StopChoice = .unlimited {
+        didSet {
+            guard !isPreview else { return }
+            switch stopChoice {
+            case .unlimited: preferences.set(0, forKey: "durationMinutes")
+            case .preset(let minutes): preferences.set(minutes, forKey: "durationMinutes")
+            case .custom, .date, .process: break
+            }
+        }
+    }
     var customDuration: Double = 90
     var durationUnit: DurationUnit = .minutes
     var stopDate = Date().addingTimeInterval(3_600)
@@ -103,6 +113,11 @@ import ServiceManagement
             draft = PolicyDraft(policy)
             baseline = draft
         }
+        if let minutes = preferences.object(forKey: "durationMinutes") as? Int,
+            SessionEnd.presetMinutes.contains(minutes)
+        {
+            stopChoice = .preset(minutes)
+        }
     }
 
     func prepareForLaunch() async {
@@ -158,45 +173,27 @@ import ServiceManagement
     var ownSession: SessionSummary? {
         status?.sessions.first(where: { $0.belongsToClient && $0.kind == .manual })
     }
-    var closedLidAwakeEnabled: Bool {
-        status.map { !$0.sessions.isEmpty || $0.sleep.ownsGlobalHold } ?? false
+    var keepAwakeEnabled: Bool {
+        status.map {
+            !$0.sessions.isEmpty || $0.sleep.restorationPending
+        } ?? false
     }
-    var canToggleClosedLidAwake: Bool {
+    var canToggleKeepAwake: Bool {
         canControl && !busy && !updating && !quitting
-            && (closedLidAwakeEnabled
+            && (keepAwakeEnabled
                 || (status?.sleep.fault == nil && status?.sleep.observed == .allowed
                     && status?.power.thermal.allowsAwake == true))
     }
     var closedLidExplanation: String {
-        guard connectionError == nil else {
-            return "State unavailable. Reconnect before changing closed-lid sleep."
+        if presentation == .active, status?.sleep.ownsGlobalHold == true {
+            return "Closed-lid protection is active for this session."
         }
-        guard let status else {
-            return "Enable Awake below to control closed-lid sleep."
+        if presentation == .active, status?.policy.keepsAwakeWithLidClosed == false {
+            return "Your Mac stays awake while open. Closing the lid works normally."
         }
-        if status.sleep.ownsGlobalHold && status.sleep.phase != .active {
-            return "Protection is not confirmed. Turn off to restore normal sleep."
-        }
-        if status.sleep.observed == .unknown {
-            return "State unavailable. Closed-lid protection has not been confirmed."
-        }
-        if status.sleep.fault != nil {
-            return "Resolve the power issue above before enabling protection."
-        }
-        if !status.sessions.isEmpty {
-            guard presentation == .active else {
-                return
-                    "Protection is waiting for power. Closing the lid can still put this Mac to sleep."
-            }
-            let hasStopCondition =
-                status.policy.maximumDuration != nil
-                || status.sessions.contains { $0.end != .unlimited }
-                || watchedProcesses != nil
-            return hasStopCondition
-                ? "Active for the current session, until its stop condition or you turn this off."
-                : "On until you turn it off. Battery and temperature limits still apply."
-        }
-        return "Turn on now, without a timer. Turning off ends all Awake sessions."
+        return draft.keepsAwakeWithLidClosed
+            ? "Applies only while Awake is active, under the same timer and power limits."
+            : "Closing the lid works normally, even while Awake is active."
     }
     var taskCount: Int {
         (status?.sessions.filter { $0.kind != .manual }.count ?? 0)
@@ -210,7 +207,9 @@ import ServiceManagement
     private var readyToUpdate: Bool {
         guard connectionError == nil, !removalComplete else { return false }
         guard let status else { return helperStatus == .notRegistered }
-        return status.sessions.isEmpty && !status.sleep.ownsGlobalHold
+        return status.sessions.isEmpty && !status.sleep.restorationPending
+            && !status.sleep.ownsGlobalHold
+            && !status.sleep.holdsIdleAssertion
             && status.sleep.observed == .allowed
             && (status.sleep.phase == .inactive || status.sleep.phase == .blocked)
     }
@@ -484,6 +483,21 @@ import ServiceManagement
                 }
             }
             guard currentRevision == revision, !busy, !quitting else { return }
+            if let received = reply.status, received.sessions.isEmpty,
+                received.sleep.phase == .inactive, received.sleep.fault == nil,
+                received.removal == .none, let data = preferences.data(forKey: "userPolicy"),
+                let saved = try? JSONDecoder().decode(UserPolicy.self, from: data)
+            {
+                let restored = try UserPolicy(
+                    mode: saved.mode, batteryFloor: saved.batteryFloor,
+                    maximumDuration: saved.maximumDuration,
+                    allowsAutomation: received.policy.allowsAutomation,
+                    keepsAwakeWithLidClosed: saved.keepsAwakeWithLidClosed)
+                if restored != received.policy {
+                    reply = try await client.send(.configure(restored))
+                }
+            }
+            guard currentRevision == revision, !busy, !quitting else { return }
             if let received = reply.status, received.power.battery == .notPresent,
                 received.policy.mode != .all, received.removal == .none
             {
@@ -494,15 +508,20 @@ import ServiceManagement
                             mode: .all,
                             batteryFloor: policy.batteryFloor,
                             maximumDuration: policy.maximumDuration,
-                            allowsAutomation: policy.allowsAutomation)))
+                            allowsAutomation: policy.allowsAutomation,
+                            keepsAwakeWithLidClosed: policy.keepsAwakeWithLidClosed)))
             }
             guard currentRevision == revision else { return }
             try accept(reply)
+            needsHelperUpdate = false
             connectionError = nil
         } catch {
             guard currentRevision == revision else { return }
+            needsHelperUpdate = error as? ServiceError == .incompatibleVersion
             connectionError =
-                "Connection unavailable. The last reading is no longer current. Reconnect to verify restoration."
+                needsHelperUpdate
+                ? "Update the Awake helper to use the new sleep settings. macOS approval is required."
+                : "Connection unavailable. The last reading is no longer current. Reconnect to verify restoration."
             await client?.close()
             client = nil
             watchedProcesses = nil
@@ -611,15 +630,16 @@ import ServiceManagement
         if await perform(.stop(session.id)) { watchedProcesses = nil }
     }
 
-    func setClosedLidAwake(_ enabled: Bool) async {
-        guard canToggleClosedLidAwake else { return }
+    func setKeepAwake(_ enabled: Bool) async {
+        guard canToggleKeepAwake else { return }
         if enabled {
-            guard !closedLidAwakeEnabled else { return }
-            _ = await perform(.start(SessionRequest(end: .unlimited)))
+            guard !keepAwakeEnabled else { return }
+            await startManual()
         } else {
-            guard closedLidAwakeEnabled else { return }
-            guard await perform(.stopAll) else { return }
-            if status?.sleep.ownsGlobalHold == true { await retryRestoration() }
+            guard keepAwakeEnabled, await perform(.stopAll) else { return }
+            if status?.sleep.restorationPending == true {
+                await retryRestoration()
+            }
         }
     }
 
@@ -680,7 +700,8 @@ import ServiceManagement
         do {
             let updated = try UserPolicy(
                 mode: policy.mode, batteryFloor: policy.batteryFloor,
-                maximumDuration: policy.maximumDuration, allowsAutomation: enabled)
+                maximumDuration: policy.maximumDuration, allowsAutomation: enabled,
+                keepsAwakeWithLidClosed: policy.keepsAwakeWithLidClosed)
             if await perform(.configure(updated)) {
                 preferences.set(enabled, forKey: "allowsAutomation")
             }
@@ -718,8 +739,9 @@ import ServiceManagement
         guard trustedBuild, !isPreview, !busy, !removalComplete, let helper else { return }
         busy = true
         do {
+            let firstInstall = helper.status != .enabled
             try await helper.register()
-            preferences.set(true, forKey: "enableLoginAfterHelperApproval")
+            if firstInstall { preferences.set(true, forKey: "enableLoginAfterHelperApproval") }
         } catch {
             message =
                 "The helper could not be enabled. Complete the macOS approval before retrying."
@@ -922,7 +944,7 @@ import ServiceManagement
         while busy || refreshing || updating { try? await Task.sleep(for: .milliseconds(50)) }
         if ownSession != nil { await stopManual() }
         let unresolved =
-            (status?.sleep.ownsGlobalHold == true)
+            (status?.sleep.restorationPending == true)
             && (connectionError != nil || status?.sleep.fault != nil || ownSession != nil)
         if unresolved {
             quitting = false
@@ -950,7 +972,7 @@ import ServiceManagement
             let unknown = state == "unknown"
             let policy = try! UserPolicy(
                 mode: waiting || state == "external" ? .external : .all,
-                allowsAutomation: true)
+                allowsAutomation: true, keepsAwakeWithLidClosed: active || failed)
             var registry = SessionRegistry(policy: policy)
             if state == "battery-low" {
                 let now = try! SystemClock.now()

@@ -38,9 +38,12 @@ enum PowerPresentation: Equatable {
             self = .cooling
         } else if sleep.phase == .recovering {
             self = .recovering
-        } else if sleep.phase == .active && sleep.observed == .disabled && sleep.ownsGlobalHold {
+        } else if sleep.phase == .active
+            && ((sleep.observed == .disabled && sleep.ownsGlobalHold)
+                || (sleep.observed == .allowed && sleep.holdsIdleAssertion))
+        {
             self = .active
-        } else if sleep.ownsGlobalHold || sleep.observed == .disabled {
+        } else if sleep.ownsGlobalHold || sleep.holdsIdleAssertion || sleep.observed == .disabled {
             self = .attention
         } else if status.sessions.contains(where: { $0.suspension != nil }) {
             self = .suspended
@@ -81,6 +84,7 @@ struct PolicyDraft: Equatable {
     var batteryFloor = 20
     var limitsDuration = false
     var maximumMinutes: Double = 120
+    var keepsAwakeWithLidClosed = false
 
     init() {}
     init(_ policy: UserPolicy) {
@@ -88,13 +92,14 @@ struct PolicyDraft: Equatable {
         batteryFloor = policy.batteryFloor
         limitsDuration = policy.maximumDuration != nil
         maximumMinutes = (policy.maximumDuration ?? 7_200) / 60
+        keepsAwakeWithLidClosed = policy.keepsAwakeWithLidClosed
     }
 
     func policy(allowsAutomation: Bool) throws -> UserPolicy {
         try UserPolicy(
             mode: mode, batteryFloor: batteryFloor,
             maximumDuration: limitsDuration ? maximumMinutes * 60 : nil,
-            allowsAutomation: allowsAutomation)
+            allowsAutomation: allowsAutomation, keepsAwakeWithLidClosed: keepsAwakeWithLidClosed)
     }
 }
 

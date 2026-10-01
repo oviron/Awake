@@ -63,3 +63,12 @@ func invalidDurationsAreRejected(_ seconds: Double) {
         try SessionEnd.after(seconds: Double.leastNonzeroMagnitude).validate(at: now)
     }
 }
+
+@Test func legacyPreferencesDefaultToNormalLidBehavior() throws {
+    let old = Data(#"{"mode":"external","batteryFloor":30,"allowsAutomation":false}"#.utf8)
+    let decoded = try JSONDecoder().decode(UserPolicy.self, from: old)
+    #expect(
+        !decoded.keepsAwakeWithLidClosed && decoded.mode == .external && decoded.batteryFloor == 30)
+    let policy = try UserPolicy(keepsAwakeWithLidClosed: true)
+    #expect(try JSONDecoder().decode(UserPolicy.self, from: JSONEncoder().encode(policy)) == policy)
+}

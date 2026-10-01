@@ -195,7 +195,8 @@ struct AwakeCLI {
             guard let status = reply.status,
                 !status.sessions.contains(where: { $0.id == id })
             else { throw ServiceError.unavailable }
-            if status.sleep.fault != nil || (status.sessions.isEmpty && status.sleep.ownsGlobalHold)
+            if status.sleep.fault != nil
+                || (status.sessions.isEmpty && status.sleep.restorationPending)
             {
                 report(
                     "The task ended, but power restoration needs attention. Check Awake's observed state."

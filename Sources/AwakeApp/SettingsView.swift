@@ -23,9 +23,16 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
             if model.showsPowerControls {
                 Group {
+                    Text("While Awake is active").font(.caption.weight(.semibold)).foregroundStyle(
+                        .secondary)
+                    Toggle("Keep awake with lid closed", isOn: $model.draft.keepsAwakeWithLidClosed)
+                        .disabled(model.busy || !model.canControl)
+                    Text(model.closedLidExplanation)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     if model.showsPowerSource {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Power source")
+                            Text("Keep awake on")
                             Picker("", selection: $model.draft.mode) {
                                 ForEach(PowerMode.allCases, id: \.self) { mode in
                                     Text(mode.label).tag(mode)
@@ -34,19 +41,19 @@ struct SettingsView: View {
                             .labelsHidden()
                             .pickerStyle(.segmented)
                             .frame(maxWidth: .infinity)
-                            .accessibilityLabel("Power source")
+                            .accessibilityLabel("Keep awake on")
                         }
                     }
                     if model.showsBatteryLimit {
                         HStack {
-                            Text("Battery reserved limit")
+                            Text("Stop at")
                             Spacer()
                             HStack(spacing: 2) {
                                 TextField("Percent", text: batteryInput.projectedValue)
                                     .textFieldStyle(.roundedBorder)
                                     .multilineTextAlignment(.trailing)
                                     .frame(width: 44)
-                                    .accessibilityLabel("Battery reserved limit, percent")
+                                    .accessibilityLabel("Stop at battery level, percent")
                                     .focused($batteryFocused)
                                     .onSubmit { applyBatteryInput() }
                                     .onChange(of: batteryInput.wrappedValue) { previous, input in
@@ -70,13 +77,14 @@ struct SettingsView: View {
                                     }
                                     .onDisappear { applyBatteryInput() }
                                 Stepper(
-                                    "Battery reserved limit", value: $model.draft.batteryFloor,
+                                    "Stop at battery level", value: $model.draft.batteryFloor,
                                     in: UserPolicy.batteryFloorRange, step: 1
                                 )
                                 .labelsHidden().fixedSize()
                                 .accessibilityValue("\(model.draft.batteryFloor)%")
                             }
                             Text("%")
+                            Text("battery")
                         }
                         .monospacedDigit()
                         if model.draft.batteryFloor == 0 {
@@ -86,8 +94,8 @@ struct SettingsView: View {
                             .font(.caption)
                         }
                     }
-                    if model.stopChoice == .process {
-                        Toggle("Session time limit", isOn: $model.draft.limitsDuration)
+                    Group {
+                        Toggle("Maximum session length", isOn: $model.draft.limitsDuration)
                         if model.draft.limitsDuration {
                             HStack {
                                 Text("Maximum minutes")
@@ -103,80 +111,85 @@ struct SettingsView: View {
                     }
                 }.disabled(!model.canControl && !model.isPreview)
                 if model.showsPowerSource || model.stopChoice == .process { Divider() }
-                HStack {
+            }
+            DisclosureGroup("Integrations") {
+                if model.showsPowerControls {
+                    HStack {
+                        Toggle(
+                            "Allow CLI & AI tasks",
+                            isOn: Binding(
+                                get: { model.status?.policy.allowsAutomation ?? false },
+                                set: { enabled in Task { await model.setAutomation(enabled) } })
+                        )
+                        .disabled((!model.canControl && !model.isPreview) || model.busy)
+                        Link(
+                            destination: URL(
+                                string:
+                                    "https://github.com/oviron/Awake/blob/main/docs/cli.md#ai-agent-setup"
+                            )!
+                        ) {
+                            Image(systemName: "questionmark.circle")
+                        }
+                        .accessibilityLabel("Set up CLI and AI integration")
+                        .help("Set up CLI and AI integration")
+                    }
+                }
+                if model.showsSudoTouchID {
                     Toggle(
-                        "Allow CLI & AI tasks",
+                        "Touch ID for sudo",
                         isOn: Binding(
-                            get: { model.status?.policy.allowsAutomation ?? false },
-                            set: { enabled in Task { await model.setAutomation(enabled) } })
+                            get: {
+                                model.status?.sudoTouchID == .enabled
+                                    || model.status?.sudoTouchID == .external
+                            },
+                            set: { enabled in
+                                if enabled || model.status?.sudoTouchID == .external {
+                                    model.pendingSudoTouchID = enabled
+                                } else {
+                                    Task { await model.setSudoTouchID(false) }
+                                }
+                            })
                     )
-                    .disabled((!model.canControl && !model.isPreview) || model.busy)
-                    Link(
-                        destination: URL(
-                            string:
-                                "https://github.com/oviron/Awake/blob/main/docs/cli.md#ai-agent-setup"
-                        )!
-                    ) {
-                        Image(systemName: "questionmark.circle")
-                    }
-                    .accessibilityLabel("Set up CLI and AI integration")
-                    .help("Set up CLI and AI integration")
-                }
-            }
-            if model.showsSudoTouchID {
-                Toggle(
-                    "Touch ID for sudo",
-                    isOn: Binding(
-                        get: {
-                            model.status?.sudoTouchID == .enabled
-                                || model.status?.sudoTouchID == .external
-                        },
-                        set: { enabled in
-                            if enabled || model.status?.sudoTouchID == .external {
-                                model.pendingSudoTouchID = enabled
-                            } else {
-                                Task { await model.setSudoTouchID(false) }
-                            }
-                        })
-                )
-                .disabled(
-                    (!model.canControl && !model.isPreview) || model.busy || model.sudoTouchIDBusy
-                        || model.status?.sudoTouchID == .unavailable
-                )
-                .help("Use Touch ID for sudo commands on this Mac.")
-                .alert(
-                    model.pendingSudoTouchID == false
-                        ? "Disable Touch ID for sudo?" : "Enable Touch ID for sudo?",
-                    isPresented: Binding(
-                        get: { model.pendingSudoTouchID != nil },
-                        set: { if !$0 { model.pendingSudoTouchID = nil } }),
-                    presenting: model.pendingSudoTouchID
-                ) { enabled in
-                    Button(enabled ? "Enable" : "Disable", role: enabled ? nil : .destructive) {
-                        Task { await model.setSudoTouchID(enabled) }
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: { enabled in
-                    Text(
-                        enabled
-                            ? "Applies to sudo commands across this Mac. Your password remains available."
-                            : "This setting was enabled outside Awake. Sudo commands across this Mac will require your password instead."
+                    .disabled(
+                        (!model.canControl && !model.isPreview) || model.busy
+                            || model.sudoTouchIDBusy
+                            || model.status?.sudoTouchID == .unavailable
                     )
-                }
-            }
-            if let message = model.sudoTouchIDMessage {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label {
-                        Text(message).foregroundStyle(.secondary)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                    .help("Use Touch ID for sudo commands on this Mac.")
+                    .alert(
+                        model.pendingSudoTouchID == false
+                            ? "Disable Touch ID for sudo?" : "Enable Touch ID for sudo?",
+                        isPresented: Binding(
+                            get: { model.pendingSudoTouchID != nil },
+                            set: { if !$0 { model.pendingSudoTouchID = nil } }),
+                        presenting: model.pendingSudoTouchID
+                    ) { enabled in
+                        Button(enabled ? "Enable" : "Disable", role: enabled ? nil : .destructive) {
+                            Task { await model.setSudoTouchID(enabled) }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: { enabled in
+                        Text(
+                            enabled
+                                ? "Applies to sudo commands across this Mac. Your password remains available."
+                                : "This setting was enabled outside Awake. Sudo commands across this Mac will require your password instead."
+                        )
                     }
-                    .font(.caption).fixedSize(horizontal: false, vertical: true)
-                    if model.sudoTouchIDNeedsPermission {
-                        Button("Open Full Disk Access") { model.openPrivacySettings() }
-                            .buttonStyle(.borderedProminent)
-                            .tint(Color(red: 0.72, green: 0.32, blue: 0))
-                            .disabled(model.busy)
+                }
+                if let message = model.sudoTouchIDMessage {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label {
+                            Text(message).foregroundStyle(.secondary)
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                        }
+                        .font(.caption).fixedSize(horizontal: false, vertical: true)
+                        if model.sudoTouchIDNeedsPermission {
+                            Button("Open Full Disk Access") { model.openPrivacySettings() }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Color(red: 0.72, green: 0.32, blue: 0))
+                                .disabled(model.busy)
+                        }
                     }
                 }
             }

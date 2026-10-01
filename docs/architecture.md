@@ -26,8 +26,11 @@ reject or end AI holds. A stopped task cannot reacquire protection.
 
 `MacSleepBackend` isolates the undocumented global `pmset disablesleep` flag.
 Battery/adapter modes are policies, not independent macOS flags. Unknown readings
-suspend protection. The helper also runs Apple’s `caffeinate` and checks its
-assertion every two seconds. Recovery and restoration each allow three attempts.
+suspend protection. All active sessions use Apple’s `caffeinate -i` to prevent idle sleep;
+the helper checks its assertion every two seconds. The separate closed-lid policy
+adds `pmset disablesleep` only while a session is eligible. Changing that policy
+keeps the current session and deadline. With the policy off, closing the lid follows
+normal macOS behavior. Recovery and restoration each allow three attempts.
 Serious/critical macOS thermal pressure or an unrecognized thermal state stops all
 sessions permanently; the helper rejects new starts until the reading is safe.
 This is a coarse system pressure reading, not a physical temperature measurement.

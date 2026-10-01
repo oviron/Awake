@@ -262,25 +262,20 @@ private func status(
         #expect(!model.showsTaskCount)
     }
 
-    @Test @MainActor func closedLidSwitchDistinguishesRequestsFromConfirmedProtection() {
-        let inactive = AppModel.preview("inactive")
-        #expect(!inactive.closedLidAwakeEnabled)
-        #expect(inactive.closedLidExplanation.contains("without a timer"))
+    @Test @MainActor func lidPreferenceNeverStartsOrStopsASession() throws {
+        let idle = AppModel.preview("inactive")
+        let before = idle.status
+        #expect(!idle.keepAwakeEnabled && !idle.draft.keepsAwakeWithLidClosed)
+        idle.draft.keepsAwakeWithLidClosed = true
+        #expect(!idle.keepAwakeEnabled && idle.status == before)
+        #expect(idle.closedLidExplanation.contains("only while Awake is active"))
         let active = AppModel.preview("active")
-        #expect(active.closedLidAwakeEnabled)
-        #expect(active.closedLidExplanation.contains("stop condition"))
-        let suspended = AppModel.preview("suspended")
-        #expect(suspended.closedLidAwakeEnabled)
-        #expect(suspended.closedLidExplanation.contains("can still put this Mac to sleep"))
-        let restoring = AppModel.preview("restoration")
-        #expect(restoring.closedLidAwakeEnabled)
-        #expect(restoring.closedLidExplanation.contains("not confirmed"))
-        let unknown = AppModel.preview("unknown")
-        #expect(!unknown.closedLidAwakeEnabled)
-        #expect(unknown.closedLidExplanation.contains("not been confirmed"))
-        for state in ["setup", "removed", "thermal", "battery-low"] {
-            #expect(!AppModel.preview(state).closedLidAwakeEnabled)
-        }
+        let sessions = active.status?.sessions
+        active.draft.keepsAwakeWithLidClosed = false
+        #expect(active.keepAwakeEnabled && active.status?.sessions == sessions)
+        #expect(active.closedLidExplanation.contains("active for this session"))
+        let draft = PolicyDraft(try UserPolicy(keepsAwakeWithLidClosed: true))
+        #expect(try draft.policy(allowsAutomation: false).keepsAwakeWithLidClosed)
     }
 
     @Test @MainActor func startupNeverGrantsControlBeforeBuildVerification() async {
@@ -396,8 +391,8 @@ private func status(
         await model.prepareForLaunch()
         #expect(model.buildTrust == .untrusted)
         await model.stopAll()
-        await model.setClosedLidAwake(false)
-        await model.setClosedLidAwake(true)
+        await model.setKeepAwake(false)
+        await model.setKeepAwake(true)
         await model.setAutomation(false)
         await model.setSudoTouchID(true)
         await model.setSudoTouchID(false)
@@ -472,3 +467,30 @@ private func status(
         #expect(model.updateMessage?.hasPrefix("The next update check is available after ") == true)
     }
 #endif
+
+@Test @MainActor func defaultDurationIsRememberedWithoutAutoStarting() throws {
+    let domain = "Awake.duration-test.\(UUID().uuidString)"
+    let defaults = try #require(UserDefaults(suiteName: domain))
+    defer { defaults.removePersistentDomain(forName: domain) }
+    let first = AppModel(preferences: defaults)
+    #expect(first.stopChoice == .unlimited)
+    first.stopChoice = .preset(60)
+    let reopened = AppModel(preferences: defaults)
+    #expect(reopened.stopChoice == .preset(60) && !reopened.keepAwakeEnabled)
+    reopened.stopChoice = .unlimited
+    #expect(AppModel(preferences: defaults).stopChoice == .unlimited)
+}
+
+@Test @MainActor func idleAssertionAloneIsPresentedAsActiveWithNormalLidBehavior() throws {
+    let model = AppModel()
+    let report = SleepReport(
+        phase: .active, observed: .allowed, ownsGlobalHold: false, fault: nil,
+        holdsIdleAssertion: true)
+    try model.accept(
+        ServiceReply(
+            status: ServiceStatus(
+                policy: try UserPolicy(), power: .init(source: .external, battery: .notPresent),
+                sleep: report, sessions: [], sampledAt: Date())))
+    #expect(model.presentation == .active && model.keepAwakeEnabled)
+    #expect(model.closedLidExplanation.contains("Closing the lid works normally"))
+}

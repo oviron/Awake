@@ -58,7 +58,7 @@ struct MenuPanel: View {
                 Spacer()
             }
             statusOverview
-            closedLidControl
+            keepAwakeControl
             if model.removalInProgress {
                 Text("Uninstall pending. Right-click the icon to retry.").font(.callout)
             }
@@ -77,20 +77,17 @@ struct MenuPanel: View {
         }.padding(20)
     }
 
-    private var closedLidControl: some View {
+    private var keepAwakeControl: some View {
         VStack(alignment: .leading, spacing: 6) {
             Toggle(
-                "Keep awake with lid closed",
+                "Keep awake",
                 isOn: Binding(
-                    get: { model.closedLidAwakeEnabled },
-                    set: { enabled in Task { await model.setClosedLidAwake(enabled) } })
+                    get: { model.keepAwakeEnabled },
+                    set: { enabled in Task { await model.setKeepAwake(enabled) } })
             )
             .toggleStyle(.switch).controlSize(.regular)
-            .disabled(!model.canToggleClosedLidAwake)
-            .help("Turn on immediately without a timer. Turn off to end all Awake sessions.")
-            Text(model.closedLidExplanation)
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            .disabled(!model.canToggleKeepAwake)
+            .help("Start with the selected duration. Turn off to end all Awake sessions.")
         }
     }
 
@@ -126,7 +123,7 @@ struct MenuPanel: View {
     private var sessionControls: some View {
         VStack(alignment: .leading, spacing: 12) {
             if model.status?.sleep.fault != nil || model.presentation == .attention {
-                if model.status?.sleep.ownsGlobalHold == true {
+                if model.status?.sleep.restorationPending == true {
                     Button("Retry restoration") { Task { await model.retryRestoration() } }
                         .disabled(!model.canControl || model.busy)
                 } else {
@@ -152,21 +149,6 @@ struct MenuPanel: View {
                 }.font(.callout).foregroundStyle(.secondary)
             } else {
                 StopEditor(model: model)
-                startButton.disabled(
-                    (!model.canControl && !model.isPreview) || model.busy
-                        || model.status?.sleep.fault != nil
-                        || model.status?.power.thermal.allowsAwake == false)
-            }
-            if (model.status?.sessions.count ?? 0) > 0 {
-                Button {
-                    Task { await model.stopAll() }
-                } label: {
-                    Label(model.busy ? "Updating…" : "Stop", systemImage: "stop.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .help("End all Awake sessions; running commands continue.")
-                .controlSize(.large).buttonStyle(.bordered)
-                .disabled((!model.canControl && !model.isPreview) || model.busy)
             }
             if model.showsTaskCount {
                 Label(
@@ -197,24 +179,6 @@ struct MenuPanel: View {
         }
     }
 
-    @ViewBuilder private var startButton: some View {
-        let button = Button {
-            Task { await model.startManual() }
-        } label: {
-            Label(model.busy ? "Verifying…" : "Start session", systemImage: "timer")
-                .frame(maxWidth: .infinity)
-        }.controlSize(.large)
-        if model.status?.power.thermal.allowsAwake == false {
-            button.buttonStyle(.bordered)
-        } else if reduceTransparency || contrast == .increased {
-            button.buttonStyle(.borderedProminent)
-        } else if #available(macOS 26, *) {
-            button.buttonStyle(.glassProminent)
-        } else {
-            button.buttonStyle(.borderedProminent)
-        }
-    }
-
     private var setupControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             if model.buildTrust == .checking {
@@ -223,6 +187,9 @@ struct MenuPanel: View {
                 Text("Ready to remove").font(.callout)
             } else if !model.trustedBuild {
                 Text("Development build — power controls unavailable.").font(.callout)
+            } else if model.needsHelperUpdate {
+                Button("Update Awake helper") { Task { await model.registerHelper() } }
+                    .buttonStyle(.borderedProminent).disabled(model.busy)
             } else if model.helperStatus == .requiresApproval {
                 Button("Approve in System Settings") { model.openLoginSettings() }
                     .disabled(model.isPreview)
@@ -245,12 +212,12 @@ private struct StopEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("Stop", selection: $model.stopChoice) {
+            Picker("Duration", selection: $model.stopChoice) {
                 ForEach(SessionEnd.presetMinutes, id: \.self) { minutes in
                     Text(minutes < 60 ? "\(minutes) min" : "\(minutes / 60) h")
                         .tag(StopChoice.preset(minutes))
                 }
-                Text("No limit").tag(StopChoice.unlimited)
+                Text("Until turned off").tag(StopChoice.unlimited)
                 Divider()
                 Text("Custom duration…").tag(StopChoice.custom)
                 Text("Date & time…").tag(StopChoice.date)

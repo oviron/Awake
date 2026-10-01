@@ -139,10 +139,10 @@ final class HelperServer: NSObject, NSXPCListenerDelegate, @unchecked Sendable {
             _ = try runtime.reconcile(owner: UUID())
             pruneExpired()
             if let stoppingAt {
-                if !runtime.controller.ownsGlobalHold { exit(0) }
+                if !runtime.controller.hasPendingRestoration { exit(0) }
                 if ProcessInfo.processInfo.systemUptime - stoppingAt >= 12 {
                     logger.fault(
-                        "Shutdown could not confirm restoration; ownership journal retained.")
+                        "Shutdown could not confirm restoration.")
                     exit(1)
                 }
             }

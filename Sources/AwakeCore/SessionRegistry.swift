@@ -72,7 +72,8 @@ public struct SessionRegistry: Sendable {
         stopAll()
         policy = try UserPolicy(
             mode: policy.mode, batteryFloor: policy.batteryFloor,
-            maximumDuration: policy.maximumDuration, allowsAutomation: false
+            maximumDuration: policy.maximumDuration, allowsAutomation: false,
+            keepsAwakeWithLidClosed: policy.keepsAwakeWithLidClosed
         )
     }
 

@@ -47,12 +47,14 @@ public struct UserPolicy: Codable, Equatable, Sendable {
     public let batteryFloor: Int
     public let maximumDuration: TimeInterval?
     public let allowsAutomation: Bool
+    public let keepsAwakeWithLidClosed: Bool
 
     public init(
         mode: PowerMode = .all,
         batteryFloor: Int = 20,
         maximumDuration: TimeInterval? = nil,
-        allowsAutomation: Bool = false
+        allowsAutomation: Bool = false,
+        keepsAwakeWithLidClosed: Bool = false
     ) throws {
         guard Self.batteryFloorRange.contains(batteryFloor) else {
             throw PolicyError.invalidBatteryFloor
@@ -62,6 +64,7 @@ public struct UserPolicy: Codable, Equatable, Sendable {
         self.batteryFloor = batteryFloor
         self.maximumDuration = maximumDuration
         self.allowsAutomation = allowsAutomation
+        self.keepsAwakeWithLidClosed = keepsAwakeWithLidClosed
     }
 
     public init(from decoder: any Decoder) throws {
@@ -70,7 +73,9 @@ public struct UserPolicy: Codable, Equatable, Sendable {
             mode: values.decode(PowerMode.self, forKey: .mode),
             batteryFloor: values.decode(Int.self, forKey: .batteryFloor),
             maximumDuration: values.decodeIfPresent(TimeInterval.self, forKey: .maximumDuration),
-            allowsAutomation: values.decode(Bool.self, forKey: .allowsAutomation)
+            allowsAutomation: values.decode(Bool.self, forKey: .allowsAutomation),
+            keepsAwakeWithLidClosed: values.decodeIfPresent(
+                Bool.self, forKey: .keepsAwakeWithLidClosed) ?? false
         )
     }
 

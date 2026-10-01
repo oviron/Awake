@@ -29,14 +29,19 @@ public struct SleepReport: Equatable, Codable, Sendable {
     public let observed: SleepObservation
     public let ownsGlobalHold: Bool
     public let fault: SleepFault?
+    public let holdsIdleAssertion: Bool
+    public let restorationPending: Bool
 
     public init(
-        phase: SleepPhase, observed: SleepObservation, ownsGlobalHold: Bool, fault: SleepFault?
+        phase: SleepPhase, observed: SleepObservation, ownsGlobalHold: Bool, fault: SleepFault?,
+        holdsIdleAssertion: Bool = false, restorationPending: Bool? = nil
     ) {
         self.phase = phase
         self.observed = observed
         self.ownsGlobalHold = ownsGlobalHold
         self.fault = fault
+        self.holdsIdleAssertion = holdsIdleAssertion
+        self.restorationPending = restorationPending ?? (ownsGlobalHold || holdsIdleAssertion)
     }
 }
 
@@ -48,6 +53,8 @@ public struct SleepController: Sendable {
     private var recoveryAt: TimeInterval = 0
     private var restorationAt: TimeInterval = 0
     private var lastTime: TimeInterval?
+    private var ownsIdleHold = false
+    private var lastLidProtection: Bool?
     public static let retryLimit = 3
 
     public init(restoringOwnedHold: Bool) {
@@ -55,8 +62,10 @@ public struct SleepController: Sendable {
         fault = restoringOwnedHold ? .interrupted : nil
     }
 
+    public var hasPendingRestoration: Bool { ownsGlobalHold || ownsIdleHold }
+
     public mutating func rearm() throws {
-        guard !ownsGlobalHold else { throw SleepFault.restorationPending }
+        guard !hasPendingRestoration else { throw SleepFault.restorationPending }
         fault = nil
         recoveryAttempts = 0
         restorationAttempts = 0
@@ -70,7 +79,7 @@ public struct SleepController: Sendable {
     }
 
     public mutating func reconcile(
-        wantsAwake: Bool, now: ClockSnapshot,
+        wantsAwake: Bool, preventsLidSleep: Bool = true, now: ClockSnapshot,
         backend: inout some SleepBackend, journal: inout some OwnershipJournal
     ) -> SleepReport {
         if let lastTime, now.continuous < lastTime {
@@ -80,7 +89,6 @@ public struct SleepController: Sendable {
         }
         lastTime = now.continuous
         let observed = backend.observe()
-
         if !wantsAwake || fault != nil {
             return restore(now: now.continuous, backend: &backend, journal: &journal)
         }
@@ -88,55 +96,87 @@ public struct SleepController: Sendable {
             fault = .unreadableState
             return restore(now: now.continuous, backend: &backend, journal: &journal)
         }
-        if !ownsGlobalHold {
-            guard observed == .allowed else {
-                fault = .foreignHold
-                return report(.blocked, observed)
-            }
+        if !preventsLidSleep, ownsGlobalHold {
             do {
-                try journal.storeOwned(true)
-                ownsGlobalHold = true
+                try releaseGlobal(backend: &backend, journal: &journal, assertionReleased: true)
+                restorationAttempts = 0
+                restorationAt = 0
             } catch {
-                fault = .journalFailure
-                return report(.blocked, observed)
+                fault = .restorationFailed
+                return restore(now: now.continuous, backend: &backend, journal: &journal)
             }
-        } else if observed == .disabled, backend.hasIdleAssertion {
-            return report(.active, observed)
-        } else {
+        }
+        if !ownsGlobalHold {
+            guard backend.observe() == .allowed else {
+                fault = .foreignHold
+                return restore(now: now.continuous, backend: &backend, journal: &journal)
+            }
+            if preventsLidSleep {
+                do {
+                    try journal.storeOwned(true)
+                    ownsGlobalHold = true
+                } catch {
+                    fault = .journalFailure
+                    return restore(now: now.continuous, backend: &backend, journal: &journal)
+                }
+            }
+        }
+        let expected: SleepObservation = preventsLidSleep ? .disabled : .allowed
+        if backend.hasIdleAssertion, backend.observe() == expected {
+            ownsIdleHold = true
+            lastLidProtection = preventsLidSleep
+            return report(.active, expected, backend: backend)
+        }
+        if ownsIdleHold, lastLidProtection == preventsLidSleep {
             guard recoveryAttempts < Self.retryLimit else {
                 fault = .recoveryExhausted
                 return restore(now: now.continuous, backend: &backend, journal: &journal)
             }
-            guard now.continuous >= recoveryAt else { return report(.recovering, observed) }
+            guard now.continuous >= recoveryAt else {
+                return report(.recovering, backend.observe(), backend: backend)
+            }
             recoveryAttempts += 1
         }
-
         do {
+            ownsIdleHold = true
             try backend.setIdleAssertion(true)
             guard backend.hasIdleAssertion else { throw SleepFault.activationFailed }
-            try backend.setSleepDisabled(true)
+            if preventsLidSleep { try backend.setSleepDisabled(true) }
             let applied = backend.observe()
-            guard applied == .disabled else { throw SleepFault.activationFailed }
+            guard applied == expected else { throw SleepFault.activationFailed }
             recoveryAt = now.continuous + pow(2, Double(recoveryAttempts))
-            return report(.active, applied)
+            lastLidProtection = preventsLidSleep
+            return report(.active, applied, backend: backend)
         } catch {
             fault = .activationFailed
             return restore(now: now.continuous, backend: &backend, journal: &journal)
         }
     }
 
+    private mutating func releaseGlobal(
+        backend: inout some SleepBackend, journal: inout some OwnershipJournal,
+        assertionReleased: Bool
+    ) throws {
+        guard ownsGlobalHold else { return }
+        try backend.setSleepDisabled(false)
+        guard backend.observe() == .allowed, assertionReleased else {
+            throw SleepFault.restorationFailed
+        }
+        try journal.storeOwned(false)
+        ownsGlobalHold = false
+    }
+
     private mutating func restore(
         now: TimeInterval, backend: inout some SleepBackend, journal: inout some OwnershipJournal
     ) -> SleepReport {
-        guard ownsGlobalHold else {
-            let observed = backend.observe()
-            return report(fault == nil ? .inactive : .blocked, observed)
+        guard ownsGlobalHold || ownsIdleHold || backend.hasIdleAssertion else {
+            return report(fault == nil ? .inactive : .blocked, backend.observe(), backend: backend)
         }
         guard restorationAttempts < Self.retryLimit else {
-            return report(.blocked, backend.observe())
+            return report(.blocked, backend.observe(), backend: backend)
         }
         guard now >= restorationAt else {
-            return report(.restoring, backend.observe())
+            return report(.restoring, backend.observe(), backend: backend)
         }
         restorationAttempts += 1
         restorationAt = now + pow(2, Double(restorationAttempts))
@@ -144,26 +184,31 @@ public struct SleepController: Sendable {
         do {
             try backend.setIdleAssertion(false)
             assertionReleased = !backend.hasIdleAssertion
+            ownsIdleHold = !assertionReleased
         } catch {
+            ownsIdleHold = true
         }
         do {
-            try backend.setSleepDisabled(false)
-            guard backend.observe() == .allowed, assertionReleased else {
-                throw SleepFault.restorationFailed
-            }
-            try journal.storeOwned(false)
-            ownsGlobalHold = false
+            try releaseGlobal(
+                backend: &backend, journal: &journal, assertionReleased: assertionReleased)
+            guard assertionReleased else { throw SleepFault.restorationFailed }
             restorationAttempts = 0
             restorationAt = 0
-            return report(fault == nil ? .inactive : .blocked, .allowed)
+            lastLidProtection = nil
+            return report(fault == nil ? .inactive : .blocked, backend.observe(), backend: backend)
         } catch {
             fault = .restorationFailed
             return report(
-                restorationAttempts < Self.retryLimit ? .restoring : .blocked, backend.observe())
+                restorationAttempts < Self.retryLimit ? .restoring : .blocked,
+                backend.observe(), backend: backend)
         }
     }
 
-    private func report(_ phase: SleepPhase, _ observed: SleepObservation) -> SleepReport {
-        SleepReport(phase: phase, observed: observed, ownsGlobalHold: ownsGlobalHold, fault: fault)
+    private func report(
+        _ phase: SleepPhase, _ observed: SleepObservation, backend: some SleepBackend
+    ) -> SleepReport {
+        SleepReport(
+            phase: phase, observed: observed, ownsGlobalHold: ownsGlobalHold, fault: fault,
+            holdsIdleAssertion: backend.hasIdleAssertion, restorationPending: hasPendingRestoration)
     }
 }

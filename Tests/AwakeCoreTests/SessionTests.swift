@@ -190,3 +190,18 @@ func batteryFloorPermanentlyStopsEvenWhenAdapterCannotKeepUp(_ source: PowerSour
     let id = try registry.start(.init(), owner: UUID(), kind: .manual, now: clock())
     #expect(registry.evaluate(power: ac, now: try clock(60 * 60 * 24 * 365 * 20)).eligible == [id])
 }
+
+@Test func lidPreferenceChangesDoNotRestartOrExtendTheSession() throws {
+    let start = try ClockSnapshot(continuous: 1, wall: Date(timeIntervalSince1970: 1))
+    var registry = SessionRegistry(policy: try UserPolicy())
+    let id = try registry.start(
+        .init(end: .after(seconds: 30)), owner: UUID(), kind: .manual, now: start)
+    registry.updatePolicy(try UserPolicy(keepsAwakeWithLidClosed: true))
+    let power = PowerSnapshot(source: .external, battery: .notPresent)
+    #expect(registry.evaluate(power: power, now: start).eligible == [id])
+    let end = try ClockSnapshot(continuous: 31, wall: Date(timeIntervalSince1970: 31))
+    #expect(!registry.evaluate(power: power, now: end).wantsAwake)
+    #expect(registry.sessions.isEmpty && registry.policy.keepsAwakeWithLidClosed)
+    try registry.revokeAutomationAndStop()
+    #expect(registry.policy.keepsAwakeWithLidClosed)
+}

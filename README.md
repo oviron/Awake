@@ -16,6 +16,8 @@ checks remain pending. [Development releases](https://github.com/oviron/Awake/re
   recovery and a durable ownership journal.
 - Stops every hold under serious/critical macOS thermal pressure, or an
   unavailable thermal reading. Cooling does not resume an old session.
+- Ordinary sessions prevent automatic idle sleep. A separate **Keep awake with lid
+  closed** rule optionally extends that same session to lid closure.
 - A signed, authenticated root helper controls closed-lid sleep. It exposes no
   arbitrary command or file path. Approval is separate from building.
 - Isolated `io.github.oviron.Awake` app/helper identities, preferences, journal,

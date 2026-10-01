@@ -4,7 +4,7 @@ import Security
 import SystemConfiguration
 
 public enum AwakeIdentity {
-    public static let version = "0.1.0"
+    public static let version = "0.2.0"
     public static let application = "io.github.oviron.Awake"
     public static let commandLine = application + ".cli"
     public static let helper = application + ".helper"

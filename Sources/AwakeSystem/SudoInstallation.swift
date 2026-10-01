@@ -62,12 +62,23 @@ public enum SudoInstallation {
             try await Task.sleep(for: .milliseconds(250))
         }
         guard app.isTerminated, isRegistered == register,
-            try register || InstalledHelperFiles.areAbsent(kind: .sudo)
+            try register
+                ? !installedHelperNeedsUpgrade(identity: identity, kind: .sudo, candidate: build)
+                : InstalledHelperFiles.areAbsent(kind: .sudo)
         else { throw ServiceError.sudoTouchIDFailed }
     }
 
     @MainActor public static func ensureInstalled() async throws {
-        if !isRegistered { try await openConfigurator(register: true) }
+        if isRegistered {
+            let identity = try await SignedIdentity.current(
+                expectedIdentifier: AwakeIdentity.application)
+            guard let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+            else { throw HelperInstallationError.invalidBundle }
+            if try !installedHelperNeedsUpgrade(identity: identity, kind: .sudo, candidate: build) {
+                return
+            }
+        }
+        try await openConfigurator(register: true)
     }
 
     @MainActor public static func remove(forUpdate: Bool) async throws {
@@ -78,6 +89,7 @@ public enum SudoInstallation {
             if try forUpdate || !SudoTouchID.requiresCleanup() { return }
             try await ensureInstalled()
         }
+        if isRegistered { try await ensureInstalled() }
         if try !InstalledHelperFiles.areAbsent(kind: .sudo) {
             let client = try await ServiceClient(role: .application, sudo: true)
             do {
@@ -117,6 +129,11 @@ private struct SudoRegistration: HelperInstallation {
         let identity = try SignedIdentity(expectedIdentifier: AwakeIdentity.sudoApplication)
         try SudoInstallation.verifyBundle(Bundle.main.bundleURL, identity: identity, build: build)
         func requireFiles() throws {
+            if register, status == .enabled {
+                _ = try installedHelperNeedsUpgrade(
+                    identity: identity, kind: .sudo, candidate: build)
+                return
+            }
             guard try InstalledHelperFiles.areAbsent(kind: .sudo) else {
                 throw HelperInstallationError.conflictingInstallation
             }
@@ -125,6 +142,11 @@ private struct SudoRegistration: HelperInstallation {
             }
         }
         try requireFiles()
+        if register, status == .enabled,
+            try !installedHelperNeedsUpgrade(identity: identity, kind: .sudo, candidate: build)
+        {
+            return
+        }
         try withAuthorization(
             right: register ? kSMRightBlessPrivilegedHelper : kSMRightModifySystemDaemons
         ) { authorization in

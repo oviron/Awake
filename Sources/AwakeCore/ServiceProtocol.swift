@@ -89,13 +89,15 @@ public struct ServiceStatus: Codable, Equatable, Sendable {
     public let thermalCutoff: ThermalReading?
 
     public var canRemoveService: Bool {
-        removal != .none && sessions.isEmpty && !sleep.ownsGlobalHold
+        removal != .none && sessions.isEmpty && !sleep.restorationPending && !sleep.ownsGlobalHold
+            && !sleep.holdsIdleAssertion
             && sleep.observed == .allowed && (sleep.phase == .inactive || sleep.phase == .blocked)
     }
 
     public func automationPolicyToRestore(_ saved: UserPolicy) throws -> UserPolicy? {
         guard !policy.allowsAutomation, sessions.isEmpty, removal == .none,
             sleep.phase == .inactive, sleep.observed == .allowed, !sleep.ownsGlobalHold,
+            !sleep.holdsIdleAssertion,
             sleep.fault == nil
         else { return nil }
         return try UserPolicy(
@@ -103,7 +105,7 @@ public struct ServiceStatus: Codable, Equatable, Sendable {
             batteryFloor: max(policy.batteryFloor, saved.batteryFloor),
             maximumDuration: [policy.maximumDuration, saved.maximumDuration].compactMap { $0 }
                 .min(),
-            allowsAutomation: true)
+            allowsAutomation: true, keepsAwakeWithLidClosed: saved.keepsAwakeWithLidClosed)
     }
 
     public init(
@@ -144,7 +146,7 @@ public struct ServiceReply: Codable, Sendable {
 }
 
 public enum ServiceWire {
-    public static let version = 11
+    public static let version = 12
     public static let maximumMessageBytes = 131_072
 
     public static func decodeRequest(_ data: Data) throws -> ServiceRequest {

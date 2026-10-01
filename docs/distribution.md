@@ -14,13 +14,27 @@ The same download includes the app, CLI and AI skill. Launch at login turns on
 after helper approval. You can turn it off; it never starts a keep-awake session.
 Enable **Allow CLI & AI tasks** to use the [terminal and AI integrations](cli.md).
 
-**Keep awake with lid closed** is the main switch. Turning it on starts protection
-immediately without a timer; turning it off ends all Awake sessions, including
-CLI sessions, while their commands continue. Power-source, battery and temperature
-limits still apply. The caption distinguishes active protection, waiting for power
-and unconfirmed restoration. For a timer, date or process, choose a stop condition
-and click **Start session** instead. Protection ends on app quit and does not
-automatically resume at login, after cooling or after a battery cutoff.
+**Keep awake** starts a session using the selected **Duration**. Choose **Until
+turned off**, a timer, a date or process completion. Turn it off to end all Awake
+sessions; running CLI commands continue. Preset durations are remembered for the
+next launch. Launch at login opens the app without starting a session.
+
+**While Awake is active** contains the session rules:
+
+- **Keep awake with lid closed** adds closed-lid protection to an active session.
+  Off preserves normal lid behavior while still preventing automatic idle sleep.
+  On follows the same duration, power source, battery cutoff and temperature limits.
+  Changing it does not start, stop, restart or extend a session. When inactive,
+  neither position prevents sleep.
+- **Keep awake on** chooses battery, power adapter or both.
+- **Stop at … % battery** ends a session at that level while discharging.
+- **Maximum session length** caps every session, including CLI and process sessions.
+
+**Integrations** contains CLI/AI access and Touch ID for sudo. Launch at login and
+updates remain separate app settings. The display may dim and lock normally.
+Sessions do not resume automatically after a battery or thermal cutoff. After
+upgrading from 0.1, click **Update Awake helper** and approve the macOS prompt.
+Old preferences default the new lid rule to off.
 
 If macOS blocks opening, use **System Settings → Privacy & Security → Open Anyway**
 when offered. [Apple's instructions](https://support.apple.com/en-gb/102445).

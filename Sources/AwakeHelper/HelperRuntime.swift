@@ -28,13 +28,15 @@ final class HelperRuntime {
         let power = powerReader.snapshot()
         var evaluation = sessions.evaluate(power: power, now: now)
         var report = controller.reconcile(
-            wantsAwake: evaluation.wantsAwake, now: now,
+            wantsAwake: evaluation.wantsAwake,
+            preventsLidSleep: sessions.registry.policy.keepsAwakeWithLidClosed, now: now,
             backend: &backend, journal: &journal)
         if report.fault != nil {
             try sessions.revokeAutomationAndStop()
             evaluation = sessions.evaluate(power: power, now: now)
             report = controller.reconcile(
-                wantsAwake: false, now: now,
+                wantsAwake: false,
+                preventsLidSleep: sessions.registry.policy.keepsAwakeWithLidClosed, now: now,
                 backend: &backend, journal: &journal)
         }
         return ServiceStatus(

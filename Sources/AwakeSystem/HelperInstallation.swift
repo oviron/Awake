@@ -97,11 +97,18 @@ private struct BundledHelperInstallation: HelperInstallation {
 
 private struct BlessedHelperInstallation: HelperInstallation {
     @available(macOS, deprecated: 13.0, message: "Compatibility channel without notarization")
-    private func requireUnregisteredJob() throws {
+    private func requiresInstallation(identity: SignedIdentity, version: String) throws -> Bool {
         let modern = SMAppService.daemon(plistName: AwakeIdentity.daemonPlist).status
-        guard modern != .enabled, modern != .requiresApproval, status != .enabled else {
+        guard modern != .enabled, modern != .requiresApproval else {
             throw HelperInstallationError.conflictingInstallation
         }
+        guard status == .enabled else {
+            guard try InstalledHelperFiles.areAbsent() else {
+                throw HelperInstallationError.conflictingInstallation
+            }
+            return true
+        }
+        return try installedHelperNeedsUpgrade(identity: identity, kind: .power, candidate: version)
     }
 
     @available(macOS, deprecated: 13.0, message: "Compatibility channel without notarization")
@@ -133,7 +140,9 @@ private struct BlessedHelperInstallation: HelperInstallation {
                 helperInfo["SMAuthorizedClients"] as? [String]
                     == [try identity.requirement(for: AwakeIdentity.application)]
             else { throw HelperInstallationError.invalidBundle }
-            try requireUnregisteredJob()
+            guard let version = helperInfo["CFBundleVersion"] as? String,
+                try requiresInstallation(identity: identity, version: version)
+            else { return }
             if try !SecureOwnershipJournal.directoryIsAbsent(
                 at: InstalledHelperFiles.executablePath)
             {
@@ -142,7 +151,7 @@ private struct BlessedHelperInstallation: HelperInstallation {
                     identifier: AwakeIdentity.helper)
             }
             try withAuthorization(right: kSMRightBlessPrivilegedHelper) { authorization in
-                try requireUnregisteredJob()
+                guard try requiresInstallation(identity: identity, version: version) else { return }
                 var error: Unmanaged<CFError>?
                 guard
                     SMJobBless(
@@ -153,7 +162,10 @@ private struct BlessedHelperInstallation: HelperInstallation {
                     throw CocoaError(.executableLoad)
                 }
             }
-            guard self.status == .enabled else { throw HelperInstallationError.invalidBundle }
+            guard self.status == .enabled,
+                try !installedHelperNeedsUpgrade(
+                    identity: identity, kind: .power, candidate: version)
+            else { throw HelperInstallationError.invalidBundle }
         }.value
     }
 
@@ -199,4 +211,37 @@ func withAuthorization(right: String, operation: (AuthorizationRef) throws -> Vo
         }
     }
     try operation(reference)
+}
+
+func helperNeedsUpgrade(installed: String, candidate: String) throws -> Bool {
+    func number(_ value: String) throws -> UInt64 {
+        guard !value.isEmpty, value.count <= 18,
+            value.utf8.allSatisfy({ (48...57).contains($0) }),
+            let number = UInt64(value), number > 0
+        else { throw HelperInstallationError.conflictingInstallation }
+        return number
+    }
+    let current = try number(installed)
+    let proposed = try number(candidate)
+    guard proposed >= current else { throw HelperInstallationError.conflictingInstallation }
+    return proposed > current
+}
+
+func installedHelperNeedsUpgrade(
+    identity: SignedIdentity, kind: InstalledHelperKind, candidate: String
+) throws -> Bool {
+    for path in [kind.executablePath, kind.daemonPath] {
+        let attributes = try FileManager.default.attributesOfItem(atPath: path)
+        guard attributes[.type] as? FileAttributeType == .typeRegular,
+            (attributes[.ownerAccountID] as? NSNumber)?.uint32Value == 0,
+            let permissions = attributes[.posixPermissions] as? NSNumber,
+            permissions.intValue & 0o022 == 0
+        else { throw HelperInstallationError.conflictingInstallation }
+    }
+    let details = try identity.verifyExecutable(
+        at: URL(fileURLWithPath: kind.executablePath), identifier: kind.identifier)
+    guard let info = details[kSecCodeInfoPList as String] as? [String: Any],
+        let installed = info["CFBundleVersion"] as? String
+    else { throw HelperInstallationError.conflictingInstallation }
+    return try helperNeedsUpgrade(installed: installed, candidate: candidate)
 }

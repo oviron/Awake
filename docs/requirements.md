@@ -5,7 +5,10 @@ how to verify them.
 
 - One native Swift app for macOS 14+, Intel and Apple Silicon. GitHub download.
 - Menu-bar controls, translucent appearance and accessible keyboard navigation.
-- Keep awake with battery/adapter/both modes; closed-lid use where supported.
+- Keep awake with battery/adapter/both modes. Closed-lid protection is a separate,
+  persisted rule, off by default; it only applies while a session is eligible.
+  Changing it must not restart a timer or create a session. Ordinary keep-awake
+  uses an idle-sleep assertion without writing the global sleep flag.
 - Battery limit: 0–80%, typed or adjusted in one-percent steps. Zero disables custom protection.
 - Serious/critical or unavailable thermal readings terminate sessions; cooling never restarts them.
 - Timers, dates, unlimited sessions and waiting for all selected processes.
