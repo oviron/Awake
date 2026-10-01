@@ -1,0 +1,57 @@
+name: Local source checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+
+jobs:
+  check:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Check native application
+        run: swift Tools/ProjectTool.swift check
+      - name: Build universal development bundle
+        env:
+          AWAKE_CONFIGURATION: release
+          AWAKE_OUTPUT_DIR: ${{ runner.temp }}/awake-development
+        run: |
+          swift Tools/ProjectTool.swift bundle
+          /usr/bin/ditto -c -k --keepParent "$AWAKE_OUTPUT_DIR/Awake.app" "$AWAKE_OUTPUT_DIR/Awake-development.zip"
+      - name: Save development bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Awake-development
+          path: ${{ runner.temp }}/awake-development/Awake-development.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  sanitizer:
+    runs-on: macos-15
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [asan, tsan]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Run sanitizer
+        env:
+          SANITIZER_KIND: ${{ matrix.kind }}
+        run: swift Tools/ProjectTool.swift "$SANITIZER_KIND"

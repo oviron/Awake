@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "BeforeAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/Awake.app/Contents/MacOS/awake hook gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/Awake.app/Contents/MacOS/awake hook gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Applications/Awake.app/Contents/MacOS/awake hook gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

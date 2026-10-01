@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "/Applications/Awake.app/Contents/MacOS/awake hook cursor"
+      }
+    ],
+    "stop": [
+      {
+        "command": "/Applications/Awake.app/Contents/MacOS/awake hook cursor"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "/Applications/Awake.app/Contents/MacOS/awake hook cursor"
+      }
+    ]
+  }
+}
