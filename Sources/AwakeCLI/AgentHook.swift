@@ -18,7 +18,9 @@ struct AgentEvent: Equatable {
     }
 
     static func decode(_ data: Data, provider: String) throws -> Self {
-        guard data.count <= 1_048_576 else { throw CLIError.usage("Hook input is too large.") }
+        guard data.count <= 1_048_576 else {
+            throw CLIError.usage(String(localized: "Hook input is too large.", bundle: .awake))
+        }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let input = try decoder.decode(Input.self, from: data)
@@ -35,17 +37,20 @@ struct AgentEvent: Equatable {
         case ("codex", "SessionEnd"), ("claude", "SessionEnd"),
             ("cursor", "sessionEnd"), ("gemini", "SessionEnd"), ("other", "SessionEnd"):
             action = .endSession
-        default: throw CLIError.usage("Unsupported agent lifecycle event.")
+        default:
+            throw CLIError.usage(
+                String(localized: "Unsupported agent lifecycle event.", bundle: .awake))
         }
         guard let session = provider == "cursor" ? input.conversationId : input.sessionId else {
-            throw CLIError.usage("Missing agent session identifier.")
+            throw CLIError.usage(
+                String(localized: "Missing agent session identifier.", bundle: .awake))
         }
         let task: String
         if action == .endSession {
             task = "session"
         } else if provider == "codex" || provider == "cursor" || provider == "other" {
             guard let id = provider == "cursor" ? input.generationId : input.turnId else {
-                throw CLIError.usage("Missing turn identifier.")
+                throw CLIError.usage(String(localized: "Missing turn identifier.", bundle: .awake))
             }
             task = "turn:" + id
         } else {
@@ -56,7 +61,7 @@ struct AgentEvent: Equatable {
 
     init(action: Action, provider: String, session: String, task: String) throws {
         guard [provider, session, task].allSatisfy({ !$0.isEmpty && $0.utf8.count <= 512 }) else {
-            throw CLIError.usage("Invalid task identifier.")
+            throw CLIError.usage(String(localized: "Invalid task identifier.", bundle: .awake))
         }
         self.action = action
         self.session = Self.digest(provider + "\0" + session)
@@ -110,7 +115,9 @@ final class AgentActivity {
         guard host.isAlive else { throw WorkError.processUnavailable }
         guard try FileManager.default.contentsOfDirectory(atPath: directory.path).count < 256 else {
             throw CLIError.usage(
-                "Too many unfinished agent tasks. End the previous sessions first.")
+                String(
+                    localized: "Too many unfinished agent tasks. End the previous sessions first.",
+                    bundle: .awake))
         }
         let name = event.session + "." + event.task
         let marker = openat(fd, name, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
@@ -205,7 +212,11 @@ final class AgentActivity {
             }
         } catch {
             FileHandle.standardError.write(
-                Data("Awake could not follow this agent event; check the app.\n".utf8))
+                Data(
+                    (String(
+                        localized: "Awake could not follow this agent event; check the app.",
+                        bundle: .awake)
+                        + "\n").utf8))
         }
         print("{}")
     }
@@ -216,7 +227,9 @@ final class AgentActivity {
             upToCount: min(65_536, maximum + 1 - result.count)), !part.isEmpty
         {
             result.append(part)
-            guard result.count <= maximum else { throw CLIError.usage("Hook input is too large.") }
+            guard result.count <= maximum else {
+                throw CLIError.usage(String(localized: "Hook input is too large.", bundle: .awake))
+            }
         }
         return result
     }

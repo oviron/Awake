@@ -31,7 +31,10 @@ enum CommandOptions: Equatable {
             return .hook(provider: arguments[1])
         }
         guard let verb = arguments.first, verb == "run" || verb == "watch" else {
-            throw CLIError.usage("Expected run, watch, status or setup. Use --help for syntax.")
+            throw CLIError.usage(
+                String(
+                    localized: "Expected run, watch, status or setup. Use --help for syntax.",
+                    bundle: .awake))
         }
         var mode: PowerMode?
         var floor: Int?
@@ -40,27 +43,41 @@ enum CommandOptions: Equatable {
         var index = 1
         func nextValue() throws -> String {
             index += 1
-            guard index < arguments.count else { throw CLIError.usage("Missing option value.") }
+            guard index < arguments.count else {
+                throw CLIError.usage(String(localized: "Missing option value.", bundle: .awake))
+            }
             return arguments[index]
         }
         while index < arguments.count {
             let flag = arguments[index]
             switch flag {
             case "-a", "-b", "-c":
-                guard mode == nil else { throw CLIError.usage("Choose exactly one of -a, -b, -c.") }
+                guard mode == nil else {
+                    throw CLIError.usage(
+                        String(localized: "Choose exactly one of -a, -b, -c.", bundle: .awake))
+                }
                 mode = flag == "-a" ? .all : (flag == "-b" ? .battery : .external)
             case "--battery-floor":
                 guard floor == nil, let value = Int(try nextValue()),
                     UserPolicy.batteryFloorRange.contains(value)
                 else {
-                    throw CLIError.usage("Battery floor must be one integer from 0 through 80.")
+                    throw CLIError.usage(
+                        String(
+                            localized: "Battery floor must be one integer from 0 through 80.",
+                            bundle: .awake))
                 }
                 floor = value
             case "--for":
-                guard end == nil else { throw CLIError.usage("Choose one stop condition.") }
+                guard end == nil else {
+                    throw CLIError.usage(
+                        String(localized: "Choose one stop condition.", bundle: .awake))
+                }
                 end = .after(seconds: try duration(nextValue()))
             case "--until":
-                guard end == nil else { throw CLIError.usage("Choose one stop condition.") }
+                guard end == nil else {
+                    throw CLIError.usage(
+                        String(localized: "Choose one stop condition.", bundle: .awake))
+                }
                 let value = try nextValue()
                 let formatter = ISO8601DateFormatter()
                 var date = formatter.date(from: value)
@@ -70,37 +87,54 @@ enum CommandOptions: Equatable {
                 }
                 guard let date else {
                     throw CLIError.usage(
-                        "Use an ISO 8601 date with a timezone, for example 2026-10-01T18:00:00+02:00."
+                        String(
+                            localized:
+                                "Use an ISO 8601 date with a timezone, for example 2026-10-01T18:00:00+02:00.",
+                            bundle: .awake)
                     )
                 }
                 end = .at(date)
             case "--unlimited":
-                guard end == nil else { throw CLIError.usage("Choose one stop condition.") }
+                guard end == nil else {
+                    throw CLIError.usage(
+                        String(localized: "Choose one stop condition.", bundle: .awake))
+                }
                 end = .unlimited
             case "--pid":
                 guard verb == "watch", pid == nil, let value = Int32(try nextValue()), value > 1
                 else {
-                    throw CLIError.usage("watch requires one positive process ID greater than 1.")
+                    throw CLIError.usage(
+                        String(
+                            localized: "watch requires one positive process ID greater than 1.",
+                            bundle: .awake))
                 }
                 pid = value
             case "--":
                 guard verb == "run", index + 1 < arguments.count else {
-                    throw CLIError.usage("run requires -- followed by a command.")
+                    throw CLIError.usage(
+                        String(localized: "run requires -- followed by a command.", bundle: .awake))
                 }
                 let command = Array(arguments.dropFirst(index + 1))
                 guard !command[0].isEmpty else {
-                    throw CLIError.usage("The command cannot be empty.")
+                    throw CLIError.usage(
+                        String(localized: "The command cannot be empty.", bundle: .awake))
                 }
                 return .run(
                     command: command,
                     request: SessionRequest(mode: mode, batteryFloor: floor, end: end ?? .unlimited)
                 )
-            default: throw CLIError.usage("Unknown option: \(flag). Use -- before the command.")
+            default:
+                throw CLIError.usage(
+                    String(
+                        localized: "Unknown option: \(flag). Use -- before the command.",
+                        bundle: .awake))
             }
             index += 1
         }
         guard verb == "watch", let pid else {
-            throw CLIError.usage("run requires -- command; watch requires --pid ID.")
+            throw CLIError.usage(
+                String(
+                    localized: "run requires -- command; watch requires --pid ID.", bundle: .awake))
         }
         return .watch(
             pid: pid,
@@ -113,11 +147,17 @@ enum CommandOptions: Equatable {
             let number = Double(text.dropLast())
         else {
             throw CLIError.usage(
-                "Duration needs a positive number and s, m, h or d, for example 90m.")
+                String(
+                    localized:
+                        "Duration needs a positive number and s, m, h or d, for example 90m.",
+                    bundle: .awake))
         }
         let seconds = number * multiplier
         do { try UserPolicy.validateDuration(seconds) } catch {
-            throw CLIError.usage("Duration must be positive, finite and representable.")
+            throw CLIError.usage(
+                String(
+                    localized: "Duration must be positive, finite and representable.",
+                    bundle: .awake))
         }
         return seconds
     }

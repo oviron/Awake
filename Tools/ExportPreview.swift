@@ -4,7 +4,9 @@ import SwiftUI
 @main
 struct ExportPreview {
     @MainActor static func main() throws {
-        guard CommandLine.arguments.count == 2 else { throw CocoaError(.fileWriteInvalidFileName) }
+        guard CommandLine.arguments.count == 2 || CommandLine.arguments.count == 4 else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
         let output = URL(fileURLWithPath: CommandLine.arguments[1])
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)

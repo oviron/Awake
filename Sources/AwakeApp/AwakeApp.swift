@@ -43,9 +43,9 @@ enum AwakeApp {
                     _ = try? await NSWorkspace.shared.openApplication(
                         at: recoveryApp, configuration: configuration)
                     let alert = NSAlert()
-                    alert.messageText = "Update incomplete"
+                    alert.messageText = String(localized: "Update incomplete")
                     alert.informativeText = error.localizedDescription
-                    alert.addButton(withTitle: "OK")
+                    alert.addButton(withTitle: String(localized: "OK"))
                     app.activate()
                     alert.runModal()
                     exit(1)
@@ -110,7 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             await model.prepareForLaunch()
             if CommandLine.arguments.contains("--prepare-uninstall") {
                 let success = await model.removeIntegration()
-                let output = (model.message ?? "Removal was not confirmed.") + "\n"
+                let output =
+                    (model.message ?? String(localized: "Removal was not confirmed.")) + "\n"
                 (success ? FileHandle.standardOutput : FileHandle.standardError).write(
                     Data(output.utf8))
                 exit(success ? 0 : 1)
@@ -128,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
                 let window = NSWindow(
                     contentRect: NSRect(x: 0, y: 0, width: 360, height: 620),
                     styleMask: [.titled, .closable], backing: .buffered, defer: false)
-                window.title = "Awake — Read-only preview"
+                window.title = String(localized: "Awake — Read-only preview")
                 window.contentView = NSHostingView(rootView: MenuPanel(model: model))
                 window.center()
                 window.makeKeyAndOrderFront(nil)
@@ -144,12 +145,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         item.autosaveName = AwakeIdentity.application
         statusItem = item
         item.button?.image = BrandArt.menuIdle
-        item.button?.setAccessibilityLabel("Awake: Setup required")
+        item.button?.setAccessibilityLabel("Awake: \(String(localized: "Setup required"))")
         item.button?.target = self
         item.button?.action = #selector(clickStatusItem)
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         item.button?.setAccessibilityHelp(
-            "Click to open. Right-click for updates, uninstall and quit.")
+            String(localized: "Click to open. Right-click for updates, uninstall and quit."))
         if let button = item.button {
             activeDot.frame = NSRect(
                 x: button.bounds.midX + 6,
@@ -172,12 +173,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         let application = NSMenuItem()
         application.submenu = actionsMenu()
         mainMenu.addItem(application)
-        let edit = NSMenu(title: "Edit")
+        let edit = NSMenu(title: String(localized: "Edit"))
         for (title, selector, key) in [
-            ("Cut", #selector(NSText.cut(_:)), "x"),
-            ("Copy", #selector(NSText.copy(_:)), "c"),
-            ("Paste", #selector(NSText.paste(_:)), "v"),
-            ("Select All", #selector(NSText.selectAll(_:)), "a"),
+            (String(localized: "Cut"), #selector(NSText.cut(_:)), "x"),
+            (String(localized: "Copy"), #selector(NSText.copy(_:)), "c"),
+            (String(localized: "Paste"), #selector(NSText.paste(_:)), "v"),
+            (String(localized: "Select All"), #selector(NSText.selectAll(_:)), "a"),
         ] {
             edit.addItem(withTitle: title, action: selector, keyEquivalent: key)
         }
@@ -195,7 +196,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
                 lastPresentation = presentation
                 activeDot.isHidden = presentation != .active
                 statusItem?.button?.setAccessibilityLabel(
-                    "Awake: \(presentation?.title ?? "Setup required")")
+                    "Awake: \(presentation?.title ?? String(localized: "Setup required"))")
             }
         } onChange: { [weak self] in
             Task { @MainActor in self?.observePresentation() }
@@ -245,16 +246,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         let menu = NSMenu()
         menu.appearance = NSApp.effectiveAppearance
         let updates = NSMenuItem(
-            title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+            title: String(localized: "Check for Updates…"), action: #selector(checkForUpdates),
+            keyEquivalent: "")
         updates.target = self
         menu.addItem(updates)
         menu.addItem(.separator())
         let uninstall = NSMenuItem(
-            title: "Uninstall Awake…", action: #selector(uninstall), keyEquivalent: "")
+            title: String(localized: "Uninstall Awake…"), action: #selector(uninstall),
+            keyEquivalent: "")
         uninstall.target = self
         menu.addItem(uninstall)
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit Awake", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(
+            title: String(localized: "Quit Awake"), action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
         return menu
@@ -278,14 +282,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
                 return
             }
             let alert = NSAlert()
-            alert.messageText = result == true ? "Update available" : "Awake updates"
+            alert.messageText =
+                result == true
+                ? String(localized: "Update available") : String(localized: "Awake updates")
             alert.informativeText =
                 result == true
                 ? model.updateInstallBlockMessage(manual: true)
                 : result == false
-                    ? "Awake is up to date."
-                    : model.updateMessage ?? "The next check is available later."
-            alert.addButton(withTitle: "OK")
+                    ? String(localized: "Awake is up to date.")
+                    : model.updateMessage ?? String(localized: "The next check is available later.")
+            alert.addButton(withTitle: String(localized: "OK"))
             NSApp.activate()
             alert.runModal()
         }
@@ -299,11 +305,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         }
         popover.performClose(nil)
         let alert = NSAlert()
-        alert.messageText = "Uninstall Awake?"
+        alert.messageText = String(localized: "Uninstall Awake?")
         alert.informativeText =
-            "Ends all sessions and removes the helpers, login item and preferences. macOS may ask for separate administrator approvals. Then moves Awake to the Trash. Running commands continue."
-        alert.addButton(withTitle: "Uninstall")
-        alert.addButton(withTitle: "Cancel")
+            String(
+                localized:
+                    "Ends all sessions and removes the helpers, login item and preferences. macOS may ask for separate administrator approvals. Then moves Awake to the Trash. Running commands continue."
+            )
+        alert.addButton(withTitle: String(localized: "Uninstall"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
         alert.buttons.first?.hasDestructiveAction = true
         alert.buttons.first?.isEnabled = model.trustedBuild && !model.isPreview
         NSApp.activate()
@@ -311,7 +320,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
         let progress = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 340, height: 110),
             styleMask: [.titled], backing: .buffered, defer: false)
-        progress.title = "Uninstalling Awake"
+        progress.title = String(localized: "Uninstalling Awake")
         progress.isReleasedWhenClosed = false
         progress.contentView = NSHostingView(rootView: RemovalProgress(model: model))
         progress.center()
@@ -331,7 +340,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             } catch {
                 progress.orderOut(nil)
                 model.message =
-                    "The matching signed Awake.app could not be verified in Applications. Keep it installed there and retry."
+                    String(
+                        localized:
+                            "The matching signed Awake.app could not be verified in Applications. Keep it installed there and retry."
+                    )
                 showRemovalError()
                 return
             }
@@ -347,7 +359,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             } catch {
                 progress.orderOut(nil)
                 model.message =
-                    "The helpers were removed, but the matching signed app in Applications could not be verified. Keep Awake open and inspect the installation."
+                    String(
+                        localized:
+                            "The helpers were removed, but the matching signed app in Applications could not be verified. Keep Awake open and inspect the installation."
+                    )
                 showRemovalError()
                 return
             }
@@ -358,7 +373,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             } catch {
                 progress.orderOut(nil)
                 model.message =
-                    "Helper, login item and preferences removed. macOS could not move the app to the Trash: \(error.localizedDescription)"
+                    String(
+                        localized:
+                            "Helper, login item and preferences removed. macOS could not move the app to the Trash: \(error.localizedDescription)"
+                    )
                 NSWorkspace.shared.activateFileViewerSelecting([installedApp])
                 showRemovalError()
             }
@@ -367,9 +385,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
 
     private func showRemovalError() {
         let alert = NSAlert()
-        alert.messageText = "Uninstall incomplete"
-        alert.informativeText = model.message ?? "Keep Awake installed and retry."
-        alert.addButton(withTitle: "OK")
+        alert.messageText = String(localized: "Uninstall incomplete")
+        alert.informativeText =
+            model.message ?? String(localized: "Keep Awake installed and retry.")
+        alert.addButton(withTitle: String(localized: "OK"))
         NSApp.activate()
         alert.runModal()
     }
@@ -388,7 +407,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
                 if Self.shouldDeferRestart(
                     presentation: model.presentation, remainingSessions: remaining)
                 {
-                    model.message = "Restart postponed. Stop Awake before restarting your Mac."
+                    model.message = String(
+                        localized: "Restart postponed. Stop Awake before restarting your Mac.")
                     terminating = false
                     sender.reply(toApplicationShouldTerminate: false)
                     return
@@ -398,11 +418,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
             var shouldQuit = restored
             if !restored {
                 let alert = NSAlert()
-                alert.messageText = "Power restoration is not confirmed"
+                alert.messageText = String(localized: "Power restoration is not confirmed")
                 alert.informativeText =
-                    "Keep Awake open to retry. Quitting leaves the current power state unresolved."
-                alert.addButton(withTitle: "Keep Open")
-                alert.addButton(withTitle: "Quit Anyway")
+                    String(
+                        localized:
+                            "Keep Awake open to retry. Quitting leaves the current power state unresolved."
+                    )
+                alert.addButton(withTitle: String(localized: "Keep Open"))
+                alert.addButton(withTitle: String(localized: "Quit Anyway"))
                 shouldQuit = alert.runModal() == .alertSecondButtonReturn
             }
             terminating = false
@@ -429,7 +452,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSM
 private struct RemovalProgress: View {
     @Bindable var model: AppModel
     var body: some View {
-        ProgressView { Text(model.removalStep ?? "Preparing…") }
+        ProgressView { Text(model.removalStep ?? String(localized: "Preparing…")) }
             .padding(24).frame(width: 340, height: 110)
     }
 }

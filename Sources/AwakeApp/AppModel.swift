@@ -147,7 +147,10 @@ import ServiceManagement
         } catch {
             helperStatus = helper.status
             message =
-                "The update finished, but the helper could not be restored. Enable it again to continue."
+                String(
+                    localized:
+                        "The update finished, but the helper could not be restored. Enable it again to continue."
+                )
         }
     }
 
@@ -186,14 +189,17 @@ import ServiceManagement
     }
     var closedLidExplanation: String {
         if presentation == .active, status?.sleep.ownsGlobalHold == true {
-            return "Closed-lid protection is active for this session."
+            return String(localized: "Closed-lid protection is active for this session.")
         }
         if presentation == .active, status?.policy.keepsAwakeWithLidClosed == false {
-            return "Your Mac stays awake while open. Closing the lid works normally."
+            return String(
+                localized: "Your Mac stays awake while open. Closing the lid works normally.")
         }
         return draft.keepsAwakeWithLidClosed
-            ? "Applies only while Awake is active, under the same timer and power limits."
-            : "Closing the lid works normally, even while Awake is active."
+            ? String(
+                localized:
+                    "Applies only while Awake is active, under the same timer and power limits.")
+            : String(localized: "Closing the lid works normally, even while Awake is active.")
     }
     var taskCount: Int {
         (status?.sessions.filter { $0.kind != .manual }.count ?? 0)
@@ -222,8 +228,8 @@ import ServiceManagement
     }
     func updateInstallBlockMessage(manual: Bool = false) -> String {
         !updateSchedule.canBeginDownload(manual: manual)
-            ? "Update postponed. Please try again later."
-            : "Stop current sessions to install the update."
+            ? String(localized: "Update postponed. Please try again later.")
+            : String(localized: "Stop current sessions to install the update.")
     }
 
     func remainingSeconds(_ session: SessionSummary) -> Double? {
@@ -239,7 +245,7 @@ import ServiceManagement
             processListError = nil
         } catch {
             processes = []
-            processListError = "Processes unavailable. Enter a PID or refresh."
+            processListError = String(localized: "Processes unavailable. Enter a PID or refresh.")
         }
     }
 
@@ -301,13 +307,18 @@ import ServiceManagement
         if manual { updateMessage = nil }
         guard trustedBuild, !isPreview, !quitting, !updating else { return nil }
         guard !checkingUpdates else {
-            if manual { updateMessage = "An update check is already in progress." }
+            if manual {
+                updateMessage = String(localized: "An update check is already in progress.")
+            }
             return nil
         }
         guard updateSchedule.beginCheck(manual: manual) else {
             if manual, let next = updateSchedule.nextManualCheck() {
                 updateMessage =
-                    "The next update check is available after \(next.formatted(date: .omitted, time: .shortened))."
+                    String(
+                        localized:
+                            "The next update check is available after \(next.formatted(date: .omitted, time: .shortened))."
+                    )
             }
             return nil
         }
@@ -328,7 +339,8 @@ import ServiceManagement
         } catch {
             updateSchedule.failed(download: false)
             if manual {
-                updateMessage = "Could not reach GitHub. Check your connection and try again."
+                updateMessage = String(
+                    localized: "Could not reach GitHub. Check your connection and try again.")
             }
         }
         return nil
@@ -354,15 +366,15 @@ import ServiceManagement
             let availableUpdate
         else { return }
         guard readyToUpdate else {
-            updateMessage = "Stop the current sessions before updating."
+            updateMessage = String(localized: "Stop the current sessions before updating.")
             return
         }
         guard updateSchedule.beginDownload(manual: manual) else {
-            updateMessage = "Update postponed. Please try again later."
+            updateMessage = String(localized: "Update postponed. Please try again later.")
             return
         }
         updating = true
-        updateMessage = "Downloading update…"
+        updateMessage = String(localized: "Downloading update…")
         var staged: GitHubUpdate.Staged?
         var launched = false
         defer {
@@ -379,7 +391,7 @@ import ServiceManagement
             staged = candidate
             updateSchedule.downloaded()
             guard !quitting else { return }
-            updateMessage = "Installing update…"
+            updateMessage = String(localized: "Installing update…")
             if helper?.status == .enabled {
                 preferences.set(true, forKey: Self.updateHelperRecoveryKey)
                 guard preferences.synchronize() else { throw ServiceError.unavailable }
@@ -395,7 +407,7 @@ import ServiceManagement
         } catch {
             if case UpdateError.rateLimited(let until) = error {
                 updateSchedule.failed(download: true, retryAfter: until)
-                updateMessage = "Update postponed. Please try again later."
+                updateMessage = String(localized: "Update postponed. Please try again later.")
             } else {
                 updateSchedule.failed(download: true)
                 updateMessage = error.localizedDescription
@@ -427,7 +439,10 @@ import ServiceManagement
         guard trustedBuild, helperStatus == .enabled else {
             if status != nil {
                 connectionError =
-                    "The helper is unavailable. The last power reading is no longer current."
+                    String(
+                        localized:
+                            "The helper is unavailable. The last power reading is no longer current."
+                    )
             }
             await client?.close()
             client = nil
@@ -442,7 +457,8 @@ import ServiceManagement
                 }
             }
         } catch {
-            message = "Launch at login could not be enabled. Check Login Items & Extensions."
+            message = String(
+                localized: "Launch at login could not be enabled. Check Login Items & Extensions.")
         }
         loginStatus = SMAppService.mainApp.status
         refreshing = true
@@ -520,8 +536,14 @@ import ServiceManagement
             needsHelperUpdate = error as? ServiceError == .incompatibleVersion
             connectionError =
                 needsHelperUpdate
-                ? "Update the Awake helper to use the new sleep settings. macOS approval is required."
-                : "Connection unavailable. The last reading is no longer current. Reconnect to verify restoration."
+                ? String(
+                    localized:
+                        "Update the Awake helper to use the new sleep settings. macOS approval is required."
+                )
+                : String(
+                    localized:
+                        "Connection unavailable. The last reading is no longer current. Reconnect to verify restoration."
+                )
             await client?.close()
             client = nil
             watchedProcesses = nil
@@ -533,16 +555,28 @@ import ServiceManagement
         if received.batteryCutoff != status?.batteryCutoff {
             batteryNotice = received.batteryCutoff.map { cutoff in
                 reply.startedSession == cutoff.sessionID
-                    ? "Battery at \(cutoff.percent)%. Charge above \(cutoff.limit)% to start."
-                    : "Session ended at \(cutoff.percent)% battery (limit: \(cutoff.limit)%)."
+                    ? String(
+                        localized:
+                            "Battery at \(cutoff.percent)%. Charge above \(cutoff.limit)% to start."
+                    )
+                    : String(
+                        localized:
+                            "Session ended at \(cutoff.percent)% battery (limit: \(cutoff.limit)%)."
+                    )
             }
         }
         if !draftChanged { draft = PolicyDraft(received.policy) }
         if received.thermalCutoff != status?.thermalCutoff {
             thermalNotice = received.thermalCutoff.map { thermal in
                 thermal == .unavailable
-                    ? "Session ended because thermal monitoring is unavailable. Start a new session after monitoring returns."
-                    : "Session ended to let your Mac cool down. It will not restart automatically."
+                    ? String(
+                        localized:
+                            "Session ended because thermal monitoring is unavailable. Start a new session after monitoring returns."
+                    )
+                    : String(
+                        localized:
+                            "Session ended to let your Mac cool down. It will not restart automatically."
+                    )
             }
         }
         baseline = PolicyDraft(received.policy)
@@ -565,7 +599,8 @@ import ServiceManagement
             if let reply = try? await client.send(.status) {
                 try? accept(reply)
             } else {
-                connectionError = "Connection lost. Power restoration has not been confirmed."
+                connectionError = String(
+                    localized: "Connection lost. Power restoration has not been confirmed.")
                 await client.close()
                 self.client = nil
                 watchedProcesses = nil
@@ -579,10 +614,14 @@ import ServiceManagement
         case .sudoTouchIDPermissionDenied, .sudoTouchIDFailed:
             sudoTouchIDError = error as? ServiceError
         case .thermalPressure:
-            message = "Your Mac needs to cool down before a new session can start."
+            message = String(
+                localized: "Your Mac needs to cool down before a new session can start.")
         default:
             message =
-                "The request was not confirmed. Check the current state and your limits before retrying."
+                String(
+                    localized:
+                        "The request was not confirmed. Check the current state and your limits before retrying."
+                )
         }
     }
 
@@ -591,9 +630,14 @@ import ServiceManagement
     var sudoTouchIDMessage: String? {
         switch sudoTouchIDError {
         case .sudoTouchIDPermissionDenied:
-            "In Full Disk Access, enable the entry ending in “Awake.sudo.helper”, then try again."
+            String(
+                localized:
+                    "In Full Disk Access, enable the entry ending in “Awake.sudo.helper”, then try again."
+            )
         case .sudoTouchIDFailed:
-            "Touch ID could not be changed. Check your sudo configuration before retrying."
+            String(
+                localized:
+                    "Touch ID could not be changed. Check your sudo configuration before retrying.")
         default: nil
         }
     }
@@ -621,7 +665,10 @@ import ServiceManagement
             }
         } catch {
             message =
-                "Choose a valid duration, future date, or available PIDs separated by semicolons."
+                String(
+                    localized:
+                        "Choose a valid duration, future date, or available PIDs separated by semicolons."
+                )
         }
     }
 
@@ -659,7 +706,12 @@ import ServiceManagement
                 preferences.set(try JSONEncoder().encode(saved), forKey: "userPolicy")
                 message = nil
             }
-        } catch { message = "Use a battery floor from 0 to 80% and a positive, finite duration." }
+        } catch {
+            message = String(
+                localized:
+                    "Use a battery floor from 0 to \(UserPolicy.batteryFloorRange.upperBound)% and a positive, finite duration."
+            )
+        }
     }
 
     func policyEdited() {
@@ -688,12 +740,15 @@ import ServiceManagement
                     expectedIdentifier: AwakeIdentity.application),
                 (try? await GitHubUpdate.currentInstalledApplication(identity: identity)) != nil
             else {
-                message = "Move Awake to Applications to enable the CLI."
+                message = String(localized: "Move Awake to Applications to enable the CLI.")
                 return
             }
             guard await perform(.installCLI) else {
                 message =
-                    "The awake command could not be installed. An existing command was left unchanged."
+                    String(
+                        localized:
+                            "The awake command could not be installed. An existing command was left unchanged."
+                    )
                 return
             }
         }
@@ -705,7 +760,7 @@ import ServiceManagement
             if await perform(.configure(updated)) {
                 preferences.set(enabled, forKey: "allowsAutomation")
             }
-        } catch { message = "The automation limits could not be validated." }
+        } catch { message = String(localized: "The automation limits could not be validated.") }
     }
 
     func setSudoTouchID(_ enabled: Bool) async {
@@ -744,7 +799,10 @@ import ServiceManagement
             if firstInstall { preferences.set(true, forKey: "enableLoginAfterHelperApproval") }
         } catch {
             message =
-                "The helper could not be enabled. Complete the macOS approval before retrying."
+                String(
+                    localized:
+                        "The helper could not be enabled. Complete the macOS approval before retrying."
+                )
         }
         helperStatus = helper.status
         if helperStatus == .enabled || helperStatus == .requiresApproval {
@@ -765,7 +823,9 @@ import ServiceManagement
                 try await SMAppService.mainApp.unregister()
             }
         } catch {
-            message = "The login setting could not be changed. Check Login Items & Extensions."
+            message = String(
+                localized: "The login setting could not be changed. Check Login Items & Extensions."
+            )
         }
         loginStatus = SMAppService.mainApp.status
         busy = false
@@ -810,12 +870,12 @@ import ServiceManagement
 
     func removeIntegration(forUpdate: Bool = false) async -> Bool {
         guard trustedBuild, !isPreview, !busy, !sudoTouchIDBusy, let helper else {
-            message = "Removal requires a correctly signed Awake installation."
+            message = String(localized: "Removal requires a correctly signed Awake installation.")
             return false
         }
         quitting = true
         busy = true
-        removalStep = "Restoring normal sleep…"
+        removalStep = String(localized: "Restoring normal sleep…")
         revision &+= 1
         defer {
             busy = false
@@ -841,7 +901,7 @@ import ServiceManagement
                     throw ServiceError.restorationRequired
                 }
             }
-            removalStep = "Removing the sudo component…"
+            removalStep = String(localized: "Removing the sudo component…")
             try await SudoInstallation.remove(forUpdate: forUpdate)
             if try !InstalledHelperFiles.areAbsent() {
                 await client?.close()
@@ -849,7 +909,7 @@ import ServiceManagement
                 _ = try await client?.send(forUpdate ? .prepareUpdate : .prepareRemoval)
                 _ = try await client?.send(.finishRemoval)
             }
-            removalStep = "Removing the helper…"
+            removalStep = String(localized: "Removing the helper…")
             if !forUpdate, try InstalledCLI.isAppOwnedLinkPresent() {
                 throw ServiceError.restorationRequired
             }
@@ -857,7 +917,7 @@ import ServiceManagement
             guard helper.removalIsConfirmed else { throw ServiceError.unavailable }
             await client?.close()
             client = nil
-            removalStep = "Removing the login item…"
+            removalStep = String(localized: "Removing the login item…")
             let absentLoginStates: [SMAppService.Status] = [.notRegistered, .notFound]
             if !forUpdate, !absentLoginStates.contains(SMAppService.mainApp.status) {
                 try await SMAppService.mainApp.unregister()
@@ -867,7 +927,7 @@ import ServiceManagement
                 try InstalledHelperFiles.areAbsent(kind: .sudo), !SudoInstallation.isRegistered
             else { throw ServiceError.restorationRequired }
             if !forUpdate {
-                removalStep = "Removing preferences…"
+                removalStep = String(localized: "Removing preferences…")
                 for provider in AgentSetup.providers {
                     try AgentSetup.configure(
                         provider, remove: true,
@@ -896,7 +956,7 @@ import ServiceManagement
             monitoring?.cancel()
             updateMonitoring?.cancel()
             message =
-                "Helper, login item and preferences removed."
+                String(localized: "Helper, login item and preferences removed.")
             return true
         } catch {
             quitting = false
@@ -904,19 +964,24 @@ import ServiceManagement
                 if let reply = try? await client?.send(.status) {
                     try? accept(reply)
                 } else {
-                    connectionError = "Reconnect before retrying the update."
+                    connectionError = String(localized: "Reconnect before retrying the update.")
                 }
-                message = "Update postponed until current sessions end."
+                message = String(localized: "Update postponed until current sessions end.")
                 return false
             }
             await client?.close()
             client = nil
             connectionError =
-                "Removal was not confirmed. Reconnect before trusting the current state."
+                String(
+                    localized:
+                        "Removal was not confirmed. Reconnect before trusting the current state.")
             helperStatus = helper.status
             loginStatus = SMAppService.mainApp.status
             message =
-                "\(removalStep ?? "Uninstall") failed: \(error.localizedDescription) Keep Awake installed and retry."
+                String(
+                    localized:
+                        "\(removalStep ?? String(localized: "Uninstall")) failed: \(error.localizedDescription) Keep Awake installed and retry."
+                )
             if error as? ServiceError == .sudoTouchIDPermissionDenied
                 || error as? ServiceError == .sudoTouchIDFailed
             {

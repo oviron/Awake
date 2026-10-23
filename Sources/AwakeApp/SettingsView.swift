@@ -33,15 +33,11 @@ struct SettingsView: View {
                     if model.showsPowerSource {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Keep awake on")
-                            Picker("", selection: $model.draft.mode) {
-                                ForEach(PowerMode.allCases, id: \.self) { mode in
-                                    Text(mode.label).tag(mode)
-                                }
+                            ViewThatFits(in: .horizontal) {
+                                powerModePicker.pickerStyle(.segmented)
+                                powerModePicker.pickerStyle(.menu)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.segmented)
                             .frame(maxWidth: .infinity)
-                            .accessibilityLabel("Keep awake on")
                         }
                     }
                     if model.showsBatteryLimit {
@@ -83,7 +79,7 @@ struct SettingsView: View {
                                 .labelsHidden().fixedSize()
                                 .accessibilityValue("\(model.draft.batteryFloor)%")
                             }
-                            Text("%")
+                            Text(verbatim: "%")
                             Text("battery")
                         }
                         .monospacedDigit()
@@ -158,22 +154,30 @@ struct SettingsView: View {
                     .help("Use Touch ID for sudo commands on this Mac.")
                     .alert(
                         model.pendingSudoTouchID == false
-                            ? "Disable Touch ID for sudo?" : "Enable Touch ID for sudo?",
+                            ? String(localized: "Disable Touch ID for sudo?")
+                            : String(localized: "Enable Touch ID for sudo?"),
                         isPresented: Binding(
                             get: { model.pendingSudoTouchID != nil },
                             set: { if !$0 { model.pendingSudoTouchID = nil } }),
                         presenting: model.pendingSudoTouchID
                     ) { enabled in
-                        Button(enabled ? "Enable" : "Disable", role: enabled ? nil : .destructive) {
+                        Button(
+                            enabled ? String(localized: "Enable") : String(localized: "Disable"),
+                            role: enabled ? nil : .destructive
+                        ) {
                             Task { await model.setSudoTouchID(enabled) }
                         }
                         Button("Cancel", role: .cancel) {}
                     } message: { enabled in
-                        Text(
-                            enabled
-                                ? "Applies to sudo commands across this Mac. Your password remains available."
-                                : "This setting was enabled outside Awake. Sudo commands across this Mac will require your password instead."
-                        )
+                        if enabled {
+                            Text(
+                                "Applies to sudo commands across this Mac. Your password remains available."
+                            )
+                        } else {
+                            Text(
+                                "This setting was enabled outside Awake. Sudo commands across this Mac will require your password instead."
+                            )
+                        }
                     }
                 }
                 if let message = model.sudoTouchIDMessage {
@@ -222,6 +226,16 @@ struct SettingsView: View {
         }
         .font(.callout).toggleStyle(.switch).controlSize(.small)
         .onChange(of: model.draft) { model.policyEdited() }
+    }
+
+    private var powerModePicker: some View {
+        Picker("", selection: $model.draft.mode) {
+            ForEach(PowerMode.allCases, id: \.self) { mode in
+                Text(mode.label).tag(mode)
+            }
+        }
+        .labelsHidden()
+        .accessibilityLabel("Keep awake on")
     }
 
     private func applyBatteryInput() {

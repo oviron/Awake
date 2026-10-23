@@ -577,6 +577,193 @@ func selfTest(developmentApp: URL? = nil) throws {
     print("Release input and optional development-signature rejection checks passed.")
 }
 
+let localizationRoot = URL(fileURLWithPath: "Localization", isDirectory: true)
+let localizationFiles = ["Localizable.strings", "Localizable.stringsdict", "SudoInfoPlist.strings"]
+
+func localizations() throws -> [String] {
+    try FileManager.default.contentsOfDirectory(atPath: localizationRoot.path)
+        .filter { $0.hasSuffix(".lproj") }.map { String($0.dropLast(".lproj".count)) }.sorted()
+}
+
+func localizationFile(_ language: String, _ name: String) -> URL {
+    localizationRoot.appendingPathComponent(language + ".lproj/" + name)
+}
+
+func extractedStrings(
+    buildPath: [String], compilerFlags: [String], environment: [String: String]
+) throws -> [String: Set<String>] {
+    // A separate, kept scratch path: the extraction flags would otherwise invalidate the
+    // regular build, and an incremental build re-emits only the files it recompiles.
+    var sdk: [String] = []
+    if let index = buildPath.firstIndex(of: "--sdk") { sdk = Array(buildPath[index...(index + 1)]) }
+    let base =
+        buildPath.firstIndex(of: "--scratch-path").map { buildPath[$0 + 1] } ?? ".build"
+    let scratch = URL(fileURLWithPath: base, isDirectory: true).appendingPathComponent(
+        "localized-strings", isDirectory: true)
+    let output = scratch.appendingPathComponent("stringsdata", isDirectory: true)
+    try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+    _ = try run(
+        "/usr/bin/xcrun",
+        ["swift", "build", "--scratch-path", scratch.appendingPathComponent("build").path] + sdk
+            + compilerFlags
+            + [
+                "-Xswiftc", "-emit-localized-strings", "-Xswiftc",
+                "-emit-localized-strings-path", "-Xswiftc", output.path,
+            ], environment: environment)
+    let root = FileManager.default.currentDirectoryPath + "/"
+    var keys: [String: Set<String>] = [:]
+    for name in try FileManager.default.contentsOfDirectory(atPath: output.path)
+    where name.hasSuffix(".stringsdata") {
+        let data = try Data(contentsOf: output.appendingPathComponent(name))
+        guard let record = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let source = record["source"] as? String,
+            let tables = record["tables"] as? [String: [[String: Any]]]
+        else { throw CocoaError(.propertyListReadCorrupt) }
+        guard FileManager.default.fileExists(atPath: source) else { continue }
+        try require(
+            Set(tables.keys).isSubset(of: ["Localizable"]),
+            "Use the default Localizable table: \(source)")
+        let file =
+            source.hasPrefix(root + "Sources/")
+            ? String(source.dropFirst(root.count + "Sources/".count)) : source
+        for entry in tables["Localizable"] ?? [] {
+            guard let key = entry["key"] as? String else {
+                throw CocoaError(.propertyListReadCorrupt)
+            }
+            if !key.isEmpty { keys[key, default: []].insert(file) }
+        }
+    }
+    try require(!keys.isEmpty, "The compiler extracted no localizable strings.")
+    return keys
+}
+
+func stringsLiteral(_ value: String) -> String {
+    var result = "\""
+    for scalar in value.unicodeScalars {
+        switch scalar {
+        case "\\": result += "\\\\"
+        case "\"": result += "\\\""
+        case "\n": result += "\\n"
+        case "\t": result += "\\t"
+        default: result.unicodeScalars.append(scalar)
+        }
+    }
+    return result + "\""
+}
+
+func baseStrings(_ keys: [String: Set<String>]) -> String {
+    var text =
+        "/* Generated from the Swift sources by `swift Tools/ProjectTool.swift strings`.\n"
+        + "   Do not edit; copy this file to translate. Localization/README.md explains how. */\n"
+    for key in keys.keys.sorted() {
+        let files = keys[key]!.sorted().joined(separator: ", ")
+        text += "\n/* \(files) */\n\(stringsLiteral(key)) = \(stringsLiteral(key));\n"
+    }
+    return text
+}
+
+func formatArguments(_ text: String) throws -> [Int: String] {
+    let pattern = try NSRegularExpression(
+        pattern:
+            "%(?:([1-9][0-9]*)\\$)?[-+ #0']*[0-9]*(?:\\.[0-9]+)?(hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXoOfFeEgGcCsSpaA%])"
+    )
+    var arguments: [Int: String] = [:]
+    var next = 1
+    let range = NSRange(text.startIndex..., in: text)
+    for match in pattern.matches(in: text, range: range) {
+        let conversion = String(text[Range(match.range(at: 3), in: text)!])
+        if conversion == "%" { continue }
+        let position = Range(match.range(at: 1), in: text).flatMap { Int(text[$0]) } ?? next
+        next = position + 1
+        let length = Range(match.range(at: 2), in: text).map { String(text[$0]) } ?? ""
+        arguments[position] = length + conversion
+    }
+    return arguments
+}
+
+func validateLocalizations() throws -> [String] {
+    let languages = try localizations()
+    try require(languages.contains("en"), "Localization/en.lproj is required.")
+    let base = try PropertyListSerialization.propertyList(
+        from: Data(contentsOf: localizationFile("en", "Localizable.strings")), format: nil)
+    guard let english = base as? [String: String] else {
+        throw CocoaError(.propertyListReadCorrupt)
+    }
+    for language in languages {
+        try require(
+            matches(language, "[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?"),
+            "Name localization folders by language code, for example ru.lproj or pt-BR.lproj: \(language)"
+        )
+        let directory = localizationRoot.appendingPathComponent(language + ".lproj")
+        let files = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        let unexpected = Set(files).subtracting(localizationFiles)
+        try require(
+            unexpected.isEmpty,
+            "\(language).lproj may contain only \(localizationFiles.joined(separator: ", ")): \(unexpected.sorted().joined(separator: ", "))"
+        )
+        try require(
+            files.contains("Localizable.strings"), "\(language).lproj needs Localizable.strings.")
+        for file in files {
+            _ = try run(
+                "/usr/bin/plutil", ["-lint", "-s", directory.appendingPathComponent(file).path])
+        }
+        let parsed = try PropertyListSerialization.propertyList(
+            from: Data(contentsOf: localizationFile(language, "Localizable.strings")), format: nil)
+        guard let strings = parsed as? [String: String] else {
+            throw CocoaError(.propertyListReadCorrupt)
+        }
+        let missing = Set(english.keys).subtracting(strings.keys).sorted()
+        let stale = Set(strings.keys).subtracting(english.keys).sorted()
+        try require(
+            missing.isEmpty && stale.isEmpty,
+            "\(language).lproj/Localizable.strings must have exactly the keys of en.lproj. Missing: \(missing.prefix(10)) Unknown: \(stale.prefix(10))"
+        )
+        for (key, value) in strings {
+            try require(
+                try formatArguments(key) == formatArguments(value),
+                "\(language): placeholders differ from the English text in \(stringsLiteral(key))")
+        }
+        if files.contains("Localizable.stringsdict") {
+            let plurals = try propertyList(localizationFile(language, "Localizable.stringsdict"))
+            for (key, value) in plurals {
+                guard english[key] != nil, let rule = value as? [String: Any],
+                    rule["NSStringLocalizedFormatKey"] is String
+                else {
+                    throw NSError(
+                        domain: "Awake.ProjectTool", code: 1,
+                        userInfo: [
+                            NSLocalizedDescriptionKey:
+                                "\(language).lproj/Localizable.stringsdict has an unknown or invalid entry: \(key)"
+                        ])
+                }
+            }
+        }
+        if files.contains("SudoInfoPlist.strings") {
+            let info = try propertyList(localizationFile(language, "SudoInfoPlist.strings"))
+            try require(
+                Set(info.keys).isSubset(of: ["NSSystemAdministrationUsageDescription"]),
+                "\(language).lproj/SudoInfoPlist.strings may only translate NSSystemAdministrationUsageDescription."
+            )
+        }
+    }
+    return languages
+}
+
+func copyLocalizations(_ languages: [String], to resources: URL, sudo: Bool) throws {
+    for language in languages {
+        let directory = resources.appendingPathComponent(language + ".lproj", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        for file in localizationFiles
+        where FileManager.default.fileExists(atPath: localizationFile(language, file).path) {
+            guard file != "SudoInfoPlist.strings" || sudo else { continue }
+            try FileManager.default.copyItem(
+                at: localizationFile(language, file),
+                to: directory.appendingPathComponent(
+                    file == "SudoInfoPlist.strings" ? "InfoPlist.strings" : file))
+        }
+    }
+}
+
 func distributionCommand(_ arguments: [String]) throws -> Bool {
     let requested = arguments.first ?? ""
     let community = ["community-verify", "community-package"].contains(requested)
@@ -680,10 +867,12 @@ do {
     let community = ["community-bundle", "community-sign"].contains(arguments.first ?? "")
     let signing = arguments == ["sign"] || arguments == ["community-sign"]
     let preview = arguments == ["preview"]
+    let strings = arguments == ["strings"]
     let bundle = arguments == ["bundle"] || arguments == ["community-bundle"] || signing || preview
     try require(
-        arguments.count == 1 && (arguments == ["check"] || sanitizer != nil || bundle),
-        "Usage: swift Tools/ProjectTool.swift check | asan | tsan | bundle | preview | sign | community-bundle | community-sign | self-test [APP] | verify APP TEAM | notarize APP TEAM KEYCHAIN_PROFILE | package APP TEAM NEW_OUTPUT_DIR | community-verify APP CERT_SHA1 | community-package APP CERT_SHA1 NEW_OUTPUT_DIR"
+        arguments.count == 1
+            && (arguments == ["check"] || strings || sanitizer != nil || bundle),
+        "Usage: swift Tools/ProjectTool.swift check | strings | asan | tsan | bundle | preview | sign | community-bundle | community-sign | self-test [APP] | verify APP TEAM | notarize APP TEAM KEYCHAIN_PROFILE | package APP TEAM NEW_OUTPUT_DIR | community-verify APP CERT_SHA1 | community-package APP CERT_SHA1 NEW_OUTPUT_DIR"
     )
     _ = try run("/usr/bin/git", ["diff", "--check"])
     _ = try run(
@@ -729,6 +918,27 @@ do {
     var buildEnvironment = ProcessInfo.processInfo.environment
     buildEnvironment.removeValue(forKey: "AWAKE_HELPER_METADATA")
     buildEnvironment.removeValue(forKey: "AWAKE_SUDO_METADATA")
+    if strings || (!bundle && sanitizer == nil) {
+        let generated = baseStrings(
+            try extractedStrings(
+                buildPath: buildPath, compilerFlags: compilerFlags, environment: buildEnvironment))
+        let base = localizationFile("en", "Localizable.strings")
+        if strings {
+            try Data(generated.utf8).write(to: base, options: .atomic)
+        } else {
+            try require(
+                (try? String(contentsOf: base, encoding: .utf8)) == generated,
+                "Localization/en.lproj/Localizable.strings is out of date. Run: swift Tools/ProjectTool.swift strings"
+            )
+        }
+    }
+    let languages = try validateLocalizations()
+    if strings {
+        print(
+            "Updated Localization/en.lproj/Localizable.strings. Checked: \(languages.joined(separator: ", "))."
+        )
+        exit(0)
+    }
     if bundle {
         let configuration =
             signing
@@ -751,6 +961,7 @@ do {
         }
         try manager.createDirectory(at: output, withIntermediateDirectories: false)
         var info = try propertyList(URL(fileURLWithPath: "Packaging/Info.plist"))
+        info["CFBundleLocalizations"] = languages
         if preview { info["AwakePreviewState"] = "active" }
         if let preview = ProcessInfo.processInfo.environment["AWAKE_PREVIEW_STATE"] {
             try require(
@@ -768,6 +979,7 @@ do {
             buildEnvironment["AWAKE_HELPER_METADATA"] = directory.path
         }
         var sudoInfo = try propertyList(URL(fileURLWithPath: "Packaging/Info.plist"))
+        sudoInfo["CFBundleLocalizations"] = languages
         sudoInfo["CFBundleIdentifier"] = "io.github.oviron.Awake.sudo"
         sudoInfo["CFBundleExecutable"] = "AwakeSudo"
         sudoInfo["CFBundleName"] = "Awake — Touch ID for sudo"
@@ -820,7 +1032,13 @@ do {
                     "Sources/AwakeApp/Presentation.swift",
                     "Sources/AwakeApp/SettingsView.swift", "Tools/ExportPreview.swift",
                 ] + objects + ["-o", executable])
-            _ = try run(executable, [output.appendingPathComponent("menu-preview.png").path])
+            try copyLocalizations(languages, to: output, sudo: false)
+            for language in languages {
+                let name = language == "en" ? "menu-preview.png" : "menu-preview-\(language).png"
+                _ = try run(
+                    executable,
+                    [output.appendingPathComponent(name).path, "-AppleLanguages", "(\(language))"])
+            }
         }
         try require(
             try run(binaryPath + "/awake", ["--version"], capture: true)
@@ -888,6 +1106,12 @@ do {
         try manager.copyItem(
             at: URL(fileURLWithPath: "UPSTREAM.md"),
             to: contents.appendingPathComponent("Resources/UPSTREAM.md"))
+        try copyLocalizations(
+            languages, to: contents.appendingPathComponent("Resources"), sudo: false)
+        try copyLocalizations(
+            languages,
+            to: contents.appendingPathComponent("Helpers/Awake Sudo.app/Contents/Resources"),
+            sudo: true)
         try manager.copyItem(
             at: URL(fileURLWithPath: "skills/awake"),
             to: contents.appendingPathComponent("Resources/awake-skill"))

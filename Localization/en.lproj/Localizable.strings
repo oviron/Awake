@@ -1,0 +1,644 @@
+/* Generated from the Swift sources by `swift Tools/ProjectTool.swift strings`.
+   Do not edit; copy this file to translate. Localization/README.md explains how. */
+
+/* AwakeApp/AppModel.swift */
+"%@ failed: %@ Keep Awake installed and retry." = "%@ failed: %@ Keep Awake installed and retry.";
+
+/* AwakeApp/MenuPanel.swift */
+"%@, PID %d" = "%@, PID %d";
+
+/* AwakeApp/MenuPanel.swift */
+"%lld h" = "%lld h";
+
+/* AwakeApp/MenuPanel.swift */
+"%lld min" = "%lld min";
+
+/* AwakeApp/MenuPanel.swift */
+"%lld tracked tasks" = "%lld tracked tasks";
+
+/* AwakeApp/MenuPanel.swift, AwakeApp/SettingsView.swift */
+"%lld%%" = "%lld%%";
+
+/* AwakeCLI/AwakeCLI.swift */
+"A correctly signed Awake installation is required. The command was not launched." = "A correctly signed Awake installation is required. The command was not launched.";
+
+/* AwakeApp/Presentation.swift */
+"A previous session was interrupted. Confirm restoration, then rearm to start a new session." = "A previous session was interrupted. Confirm restoration, then rearm to start a new session.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Action required: %@" = "Action required: %@";
+
+/* AwakeApp/SettingsView.swift */
+"Allow CLI & AI tasks" = "Allow CLI & AI tasks";
+
+/* AwakeApp/AppModel.swift */
+"An update check is already in progress." = "An update check is already in progress.";
+
+/* AwakeApp/Presentation.swift */
+"Another tool already disabled sleep. Restore its setting before rearming Awake." = "Another tool already disabled sleep. Restore its setting before rearming Awake.";
+
+/* AwakeApp/AppModel.swift */
+"Applies only while Awake is active, under the same timer and power limits." = "Applies only while Awake is active, under the same timer and power limits.";
+
+/* AwakeApp/SettingsView.swift */
+"Applies to sudo commands across this Mac. Your password remains available." = "Applies to sudo commands across this Mac. Your password remains available.";
+
+/* AwakeApp/MenuPanel.swift, AwakeApp/SettingsView.swift */
+"Approve in System Settings" = "Approve in System Settings";
+
+/* AwakeApp/SettingsView.swift */
+"Automatic updates" = "Automatic updates";
+
+/* AwakeCLI/AgentHook.swift */
+"Awake could not follow this agent event; check the app." = "Awake could not follow this agent event; check the app.";
+
+/* AwakeApp/Presentation.swift */
+"Awake could not record ownership safely. Check the installation before trying again." = "Awake could not record ownership safely. Check the installation before trying again.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Awake integration removed from %@." = "Awake integration removed from %@.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Awake is ready for %@. Restart your agent and approve its hooks if asked." = "Awake is ready for %@. Restart your agent and approve its hooks if asked.";
+
+/* AwakeApp/AwakeApp.swift */
+"Awake is up to date." = "Awake is up to date.";
+
+/* AwakeApp/MenuPanel.swift */
+"Awake on GitHub" = "Awake on GitHub";
+
+/* AwakeApp/AwakeApp.swift */
+"Awake updates" = "Awake updates";
+
+/* AwakeApp/AwakeApp.swift */
+"Awake — Read-only preview" = "Awake — Read-only preview";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Awake — keep awake for explicitly tracked work.\n\nUsage:\n  awake status [--json]\n  awake run [options] -- command [arguments...]\n  awake watch [options] --pid ID\n  awake setup codex|claude|cursor|gemini [--remove]\n  awake hook codex|claude|cursor|gemini|other   (lifecycle JSON on stdin)\n  awake --version\n\nOptions:\n  -b | -c | -a          Battery only, AC only, or both (mutually exclusive).\n  --battery-floor N    Integer 0–80; 0 disables custom protection with warning.\n  --for DURATION       Positive duration: 30s, 90m, 2h, 1.5d.\n  --until ISO8601      Stop at a date/time with an explicit timezone.\n  --unlimited          No task duration limit (the default).\n\nThe app must authorize automation first. Requests can only narrow its limits.\nProtection ends when the command/process exits, a limit is reached, or the\nconnection is lost. The command itself is not killed when protection expires.\nrun preserves the command's exit code and standard streams. Ctrl-C forwards\nan interrupt and releases this session. watch never signals the observed PID.\nNo command is sent to the administrator helper. No automatic reacquisition." = "Awake — keep awake for explicitly tracked work.\n\nUsage:\n  awake status [--json]\n  awake run [options] -- command [arguments...]\n  awake watch [options] --pid ID\n  awake setup codex|claude|cursor|gemini [--remove]\n  awake hook codex|claude|cursor|gemini|other   (lifecycle JSON on stdin)\n  awake --version\n\nOptions:\n  -b | -c | -a          Battery only, AC only, or both (mutually exclusive).\n  --battery-floor N    Integer 0–80; 0 disables custom protection with warning.\n  --for DURATION       Positive duration: 30s, 90m, 2h, 1.5d.\n  --until ISO8601      Stop at a date/time with an explicit timezone.\n  --unlimited          No task duration limit (the default).\n\nThe app must authorize automation first. Requests can only narrow its limits.\nProtection ends when the command/process exits, a limit is reached, or the\nconnection is lost. The command itself is not killed when protection expires.\nrun preserves the command's exit code and standard streams. Ctrl-C forwards\nan interrupt and releases this session. watch never signals the observed PID.\nNo command is sent to the administrator helper. No automatic reacquisition.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Awake: %@; observed sleep flag: %@" = "Awake: %@; observed sleep flag: %@";
+
+/* AwakeApp/Presentation.swift */
+"Battery" = "Battery";
+
+/* AwakeApp/AppModel.swift */
+"Battery at %lld%%. Charge above %lld%% to start." = "Battery at %lld%%. Charge above %lld%% to start.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Battery floor must be one integer from 0 through 80." = "Battery floor must be one integer from 0 through 80.";
+
+/* AwakeApp/SettingsView.swift */
+"Battery protection is off" = "Battery protection is off";
+
+/* AwakeApp/Presentation.swift */
+"Both" = "Both";
+
+/* AwakeApp/AwakeApp.swift, AwakeApp/SettingsView.swift */
+"Cancel" = "Cancel";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Cannot follow this work: %@." = "Cannot follow this work: %@.";
+
+/* AwakeApp/AwakeApp.swift */
+"Check for Updates…" = "Check for Updates…";
+
+/* AwakeApp/AppModel.swift */
+"Choose a valid duration, future date, or available PIDs separated by semicolons." = "Choose a valid duration, future date, or available PIDs separated by semicolons.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Choose exactly one of -a, -b, -c." = "Choose exactly one of -a, -b, -c.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Choose one stop condition." = "Choose one stop condition.";
+
+/* AwakeApp/AwakeApp.swift */
+"Click to open. Right-click for updates, uninstall and quit." = "Click to open. Right-click for updates, uninstall and quit.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"Close the running Awake app before replacing it." = "Close the running Awake app before replacing it.";
+
+/* AwakeApp/AppModel.swift */
+"Closed-lid protection is active for this session." = "Closed-lid protection is active for this session.";
+
+/* AwakeApp/AppModel.swift */
+"Closing the lid works normally, even while Awake is active." = "Closing the lid works normally, even while Awake is active.";
+
+/* AwakeSudo/AwakeSudo.swift */
+"Complete the macOS administrator approval, then retry in Awake." = "Complete the macOS administrator approval, then retry in Awake.";
+
+/* AwakeApp/MenuPanel.swift */
+"Connecting…" = "Connecting…";
+
+/* AwakeApp/AppModel.swift */
+"Connection lost. Power restoration has not been confirmed." = "Connection lost. Power restoration has not been confirmed.";
+
+/* AwakeApp/AppModel.swift */
+"Connection unavailable. The last reading is no longer current. Reconnect to verify restoration." = "Connection unavailable. The last reading is no longer current. Reconnect to verify restoration.";
+
+/* AwakeApp/Presentation.swift */
+"Cooling down" = "Cooling down";
+
+/* AwakeApp/AwakeApp.swift */
+"Copy" = "Copy";
+
+/* AwakeApp/AppModel.swift */
+"Could not reach GitHub. Check your connection and try again." = "Could not reach GitHub. Check your connection and try again.";
+
+/* AwakeApp/MenuPanel.swift */
+"Current session" = "Current session";
+
+/* AwakeApp/MenuPanel.swift */
+"Custom duration…" = "Custom duration…";
+
+/* AwakeApp/AwakeApp.swift */
+"Cut" = "Cut";
+
+/* AwakeApp/MenuPanel.swift */
+"Date & time…" = "Date & time…";
+
+/* AwakeApp/MenuPanel.swift */
+"Development build — power controls unavailable." = "Development build — power controls unavailable.";
+
+/* AwakeApp/SettingsView.swift */
+"Disable" = "Disable";
+
+/* AwakeApp/SettingsView.swift */
+"Disable Touch ID for sudo?" = "Disable Touch ID for sudo?";
+
+/* AwakeApp/AppModel.swift */
+"Downloading update…" = "Downloading update…";
+
+/* AwakeApp/MenuPanel.swift */
+"Duration" = "Duration";
+
+/* AwakeCLI/CommandOptions.swift */
+"Duration must be positive, finite and representable." = "Duration must be positive, finite and representable.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Duration needs a positive number and s, m, h or d, for example 90m." = "Duration needs a positive number and s, m, h or d, for example 90m.";
+
+/* AwakeApp/AwakeApp.swift */
+"Edit" = "Edit";
+
+/* AwakeApp/SettingsView.swift */
+"Enable" = "Enable";
+
+/* AwakeApp/MenuPanel.swift */
+"Enable Awake" = "Enable Awake";
+
+/* AwakeApp/SettingsView.swift */
+"Enable Touch ID for sudo?" = "Enable Touch ID for sudo?";
+
+/* AwakeApp/MenuPanel.swift */
+"End" = "End";
+
+/* AwakeApp/AwakeApp.swift */
+"Ends all sessions and removes the helpers, login item and preferences. macOS may ask for separate administrator approvals. Then moves Awake to the Trash. Running commands continue." = "Ends all sessions and removes the helpers, login item and preferences. macOS may ask for separate administrator approvals. Then moves Awake to the Trash. Running commands continue.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Expected run, watch, status or setup. Use --help for syntax." = "Expected run, watch, status or setup. Use --help for syntax.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"GitHub did not provide a valid Awake release." = "GitHub did not provide a valid Awake release.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"GitHub returned HTTP %lld." = "GitHub returned HTTP %lld.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"GitHub's request limit was reached. Try again after %@." = "GitHub's request limit was reached. Try again after %@.";
+
+/* AwakeApp/AppModel.swift */
+"Helper, login item and preferences removed." = "Helper, login item and preferences removed.";
+
+/* AwakeApp/AwakeApp.swift */
+"Helper, login item and preferences removed. macOS could not move the app to the Trash: %@" = "Helper, login item and preferences removed. macOS could not move the app to the Trash: %@";
+
+/* AwakeCLI/AgentHook.swift */
+"Hook input is too large." = "Hook input is too large.";
+
+/* AwakeApp/AppModel.swift */
+"In Full Disk Access, enable the entry ending in “Awake.sudo.helper”, then try again." = "In Full Disk Access, enable the entry ending in “Awake.sudo.helper”, then try again.";
+
+/* AwakeApp/SettingsView.swift */
+"Install Awake %@" = "Install Awake %@";
+
+/* AwakeApp/AppModel.swift */
+"Installing update…" = "Installing update…";
+
+/* AwakeApp/SettingsView.swift */
+"Integrations" = "Integrations";
+
+/* AwakeCLI/AgentHook.swift */
+"Invalid task identifier." = "Invalid task identifier.";
+
+/* AwakeApp/AwakeApp.swift */
+"Keep Awake installed and retry." = "Keep Awake installed and retry.";
+
+/* AwakeApp/AwakeApp.swift */
+"Keep Awake open to retry. Quitting leaves the current power state unresolved." = "Keep Awake open to retry. Quitting leaves the current power state unresolved.";
+
+/* AwakeApp/AwakeApp.swift */
+"Keep Open" = "Keep Open";
+
+/* AwakeApp/MenuPanel.swift */
+"Keep awake" = "Keep awake";
+
+/* AwakeApp/SettingsView.swift */
+"Keep awake on" = "Keep awake on";
+
+/* AwakeApp/SettingsView.swift */
+"Keep awake with lid closed" = "Keep awake with lid closed";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Keep-awake connection lost. The task continues without reacquiring protection." = "Keep-awake connection lost. The task continues without reacquiring protection.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Keep-awake is suspended: %@. The task still runs under your limits." = "Keep-awake is suspended: %@. The task still runs under your limits.";
+
+/* AwakeApp/SettingsView.swift */
+"Launch at login" = "Launch at login";
+
+/* AwakeApp/AppModel.swift */
+"Launch at login could not be enabled. Check Login Items & Extensions." = "Launch at login could not be enabled. Check Login Items & Extensions.";
+
+/* AwakeApp/SettingsView.swift */
+"Maximum minutes" = "Maximum minutes";
+
+/* AwakeApp/SettingsView.swift */
+"Maximum session length" = "Maximum session length";
+
+/* AwakeApp/SettingsView.swift */
+"Minutes" = "Minutes";
+
+/* AwakeCLI/AgentHook.swift */
+"Missing agent session identifier." = "Missing agent session identifier.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Missing option value." = "Missing option value.";
+
+/* AwakeCLI/AgentHook.swift */
+"Missing turn identifier." = "Missing turn identifier.";
+
+/* AwakeApp/AppModel.swift */
+"Move Awake to Applications to enable the CLI." = "Move Awake to Applications to enable the CLI.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"Move Awake to a writable Applications folder before updating." = "Move Awake to a writable Applications folder before updating.";
+
+/* AwakeApp/MenuPanel.swift */
+"No limit" = "No limit";
+
+/* AwakeApp/MenuPanel.swift */
+"No processes available" = "No processes available";
+
+/* AwakeApp/AwakeApp.swift */
+"OK" = "OK";
+
+/* AwakeSudo/AwakeSudo.swift */
+"Open Awake and use the Touch ID for sudo switch to set up this component." = "Open Awake and use the Touch ID for sudo switch to set up this component.";
+
+/* AwakeApp/SettingsView.swift */
+"Open Full Disk Access" = "Open Full Disk Access";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Operation failed: %@" = "Operation failed: %@";
+
+/* AwakeApp/MenuPanel.swift */
+"PIDs" = "PIDs";
+
+/* AwakeApp/AwakeApp.swift */
+"Paste" = "Paste";
+
+/* AwakeApp/SettingsView.swift */
+"Percent" = "Percent";
+
+/* AwakeApp/Presentation.swift */
+"Power adapter" = "Power adapter";
+
+/* AwakeApp/Presentation.swift */
+"Power needs attention" = "Power needs attention";
+
+/* AwakeApp/AwakeApp.swift */
+"Power restoration is not confirmed" = "Power restoration is not confirmed";
+
+/* AwakeApp/Presentation.swift */
+"Power source unknown" = "Power source unknown";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Power: %@; mode: %@; battery floor: %lld%%" = "Power: %@; mode: %@; battery floor: %lld%%";
+
+/* AwakeApp/AwakeApp.swift, AwakeApp/MenuPanel.swift */
+"Preparing…" = "Preparing…";
+
+/* AwakeApp/MenuPanel.swift */
+"Process IDs, separated by semicolons" = "Process IDs, separated by semicolons";
+
+/* AwakeApp/AppModel.swift */
+"Processes unavailable. Enter a PID or refresh." = "Processes unavailable. Enter a PID or refresh.";
+
+/* AwakeApp/AwakeApp.swift */
+"Quit Anyway" = "Quit Anyway";
+
+/* AwakeApp/AwakeApp.swift */
+"Quit Awake" = "Quit Awake";
+
+/* AwakeApp/MenuPanel.swift */
+"Ready to remove" = "Ready to remove";
+
+/* AwakeApp/Presentation.swift */
+"Ready when you are" = "Ready when you are";
+
+/* AwakeApp/MenuPanel.swift */
+"Rearm Awake" = "Rearm Awake";
+
+/* AwakeApp/MenuPanel.swift */
+"Reconnect" = "Reconnect";
+
+/* AwakeApp/AppModel.swift */
+"Reconnect before retrying the update." = "Reconnect before retrying the update.";
+
+/* AwakeApp/MenuPanel.swift */
+"Refresh processes" = "Refresh processes";
+
+/* AwakeApp/AppModel.swift */
+"Removal requires a correctly signed Awake installation." = "Removal requires a correctly signed Awake installation.";
+
+/* AwakeApp/AwakeApp.swift */
+"Removal was not confirmed." = "Removal was not confirmed.";
+
+/* AwakeApp/AppModel.swift */
+"Removal was not confirmed. Reconnect before trusting the current state." = "Removal was not confirmed. Reconnect before trusting the current state.";
+
+/* AwakeApp/AppModel.swift */
+"Removing preferences…" = "Removing preferences…";
+
+/* AwakeApp/AppModel.swift */
+"Removing the helper…" = "Removing the helper…";
+
+/* AwakeApp/AppModel.swift */
+"Removing the login item…" = "Removing the login item…";
+
+/* AwakeApp/AppModel.swift */
+"Removing the sudo component…" = "Removing the sudo component…";
+
+/* AwakeApp/Presentation.swift */
+"Repeated external changes exhausted recovery. Resolve the conflict before rearming." = "Repeated external changes exhausted recovery. Resolve the conflict before rearming.";
+
+/* AwakeApp/MenuPanel.swift */
+"Requires macOS administrator approval." = "Requires macOS administrator approval.";
+
+/* AwakeApp/AwakeApp.swift */
+"Restart postponed. Stop Awake before restarting your Mac." = "Restart postponed. Stop Awake before restarting your Mac.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Restoration needs attention: %@. Check the app's observed state." = "Restoration needs attention: %@. Check the app's observed state.";
+
+/* AwakeApp/Presentation.swift */
+"Restoring normal sleep" = "Restoring normal sleep";
+
+/* AwakeApp/AppModel.swift */
+"Restoring normal sleep…" = "Restoring normal sleep…";
+
+/* AwakeApp/MenuPanel.swift */
+"Retry restoration" = "Retry restoration";
+
+/* AwakeApp/MenuPanel.swift */
+"Search processes" = "Search processes";
+
+/* AwakeApp/AwakeApp.swift */
+"Select All" = "Select All";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Service refused the request (%@). Check Awake and its automation limits." = "Service refused the request (%@). Check Awake and its automation limits.";
+
+/* AwakeApp/AppModel.swift */
+"Session ended at %lld%% battery (limit: %lld%%)." = "Session ended at %lld%% battery (limit: %lld%%).";
+
+/* AwakeApp/AppModel.swift */
+"Session ended because thermal monitoring is unavailable. Start a new session after monitoring returns." = "Session ended because thermal monitoring is unavailable. Start a new session after monitoring returns.";
+
+/* AwakeApp/AppModel.swift */
+"Session ended to let your Mac cool down. It will not restart automatically." = "Session ended to let your Mac cool down. It will not restart automatically.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Sessions: %lld; automation: allowed" = "Sessions: %lld; automation: allowed";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Sessions: %lld; automation: disabled" = "Sessions: %lld; automation: disabled";
+
+/* AwakeApp/SettingsView.swift */
+"Set up CLI and AI integration" = "Set up CLI and AI integration";
+
+/* AwakeApp/AwakeApp.swift, AwakeApp/MenuPanel.swift */
+"Setup required" = "Setup required";
+
+/* AwakeApp/Presentation.swift */
+"Sleep restoration is not confirmed. Retry restoration and check the result." = "Sleep restoration is not confirmed. Retry restoration and check the result.";
+
+/* AwakeApp/MenuPanel.swift */
+"Start with the selected duration. Turn off to end all Awake sessions." = "Start with the selected duration. Turn off to end all Awake sessions.";
+
+/* AwakeApp/Presentation.swift */
+"State unavailable" = "State unavailable";
+
+/* AwakeApp/Presentation.swift */
+"Staying awake" = "Staying awake";
+
+/* AwakeApp/SettingsView.swift */
+"Stop at" = "Stop at";
+
+/* AwakeApp/SettingsView.swift */
+"Stop at battery level" = "Stop at battery level";
+
+/* AwakeApp/SettingsView.swift */
+"Stop at battery level, percent" = "Stop at battery level, percent";
+
+/* AwakeApp/AppModel.swift */
+"Stop current sessions to install the update." = "Stop current sessions to install the update.";
+
+/* AwakeApp/AppModel.swift */
+"Stop the current sessions before updating." = "Stop the current sessions before updating.";
+
+/* AwakeSudo/AwakeSudo.swift */
+"Sudo setup was not completed" = "Sudo setup was not completed";
+
+/* AwakeApp/AppModel.swift */
+"The automation limits could not be validated." = "The automation limits could not be validated.";
+
+/* AwakeApp/AppModel.swift */
+"The awake command could not be installed. An existing command was left unchanged." = "The awake command could not be installed. An existing command was left unchanged.";
+
+/* AwakeCLI/CommandOptions.swift */
+"The command cannot be empty." = "The command cannot be empty.";
+
+/* AwakeApp/AppModel.swift */
+"The helper could not be enabled. Complete the macOS approval before retrying." = "The helper could not be enabled. Complete the macOS approval before retrying.";
+
+/* AwakeApp/AppModel.swift */
+"The helper is unavailable. The last power reading is no longer current." = "The helper is unavailable. The last power reading is no longer current.";
+
+/* AwakeApp/AwakeApp.swift */
+"The helpers were removed, but the matching signed app in Applications could not be verified. Keep Awake open and inspect the installation." = "The helpers were removed, but the matching signed app in Applications could not be verified. Keep Awake open and inspect the installation.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"The keep-awake session ended. The task may continue; protection will not restart." = "The keep-awake session ended. The task may continue; protection will not restart.";
+
+/* AwakeApp/AppModel.swift */
+"The login setting could not be changed. Check Login Items & Extensions." = "The login setting could not be changed. Check Login Items & Extensions.";
+
+/* AwakeApp/AwakeApp.swift */
+"The matching signed Awake.app could not be verified in Applications. Keep it installed there and retry." = "The matching signed Awake.app could not be verified in Applications. Keep it installed there and retry.";
+
+/* AwakeApp/AwakeApp.swift */
+"The next check is available later." = "The next check is available later.";
+
+/* AwakeApp/AppModel.swift */
+"The next update check is available after %@." = "The next update check is available after %@.";
+
+/* AwakeApp/AppModel.swift */
+"The request was not confirmed. Check the current state and your limits before retrying." = "The request was not confirmed. Check the current state and your limits before retrying.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"The task ended, but power restoration needs attention. Check Awake's observed state." = "The task ended, but power restoration needs attention. Check Awake's observed state.";
+
+/* AwakeCLI/AwakeCLI.swift */
+"The task ended; restoration could not be confirmed. Check Awake's observed state." = "The task ended; restoration could not be confirmed. Check Awake's observed state.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"The update archive failed verification." = "The update archive failed verification.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"The update could not be completed. Reopen Awake or retry." = "The update could not be completed. Reopen Awake or retry.";
+
+/* AwakeApp/AppModel.swift */
+"The update finished, but the helper could not be restored. Enable it again to continue." = "The update finished, but the helper could not be restored. Enable it again to continue.";
+
+/* AwakeSystem/GitHubUpdate.swift */
+"The update must be signed by the same certificate as this app." = "The update must be signed by the same certificate as this app.";
+
+/* AwakeApp/SettingsView.swift */
+"This setting was enabled outside Awake. Sudo commands across this Mac will require your password instead." = "This setting was enabled outside Awake. Sudo commands across this Mac will require your password instead.";
+
+/* AwakeCLI/AgentHook.swift */
+"Too many unfinished agent tasks. End the previous sessions first." = "Too many unfinished agent tasks. End the previous sessions first.";
+
+/* AwakeApp/AppModel.swift */
+"Touch ID could not be changed. Check your sudo configuration before retrying." = "Touch ID could not be changed. Check your sudo configuration before retrying.";
+
+/* AwakeApp/SettingsView.swift, AwakeSudo/AwakeSudo.swift */
+"Touch ID for sudo" = "Touch ID for sudo";
+
+/* AwakeApp/AppModel.swift, AwakeApp/AwakeApp.swift */
+"Uninstall" = "Uninstall";
+
+/* AwakeApp/AwakeApp.swift */
+"Uninstall Awake?" = "Uninstall Awake?";
+
+/* AwakeApp/AwakeApp.swift */
+"Uninstall Awake…" = "Uninstall Awake…";
+
+/* AwakeApp/AwakeApp.swift */
+"Uninstall incomplete" = "Uninstall incomplete";
+
+/* AwakeApp/MenuPanel.swift */
+"Uninstall pending. Right-click the icon to retry." = "Uninstall pending. Right-click the icon to retry.";
+
+/* AwakeApp/AwakeApp.swift */
+"Uninstalling Awake" = "Uninstalling Awake";
+
+/* AwakeApp/MenuPanel.swift */
+"Unit" = "Unit";
+
+/* AwakeCLI/CommandOptions.swift */
+"Unknown option: %@. Use -- before the command." = "Unknown option: %@. Use -- before the command.";
+
+/* AwakeCLI/AgentHook.swift */
+"Unsupported agent lifecycle event." = "Unsupported agent lifecycle event.";
+
+/* AwakeApp/MenuPanel.swift */
+"Until turned off" = "Until turned off";
+
+/* AwakeApp/SettingsView.swift */
+"Update" = "Update";
+
+/* AwakeApp/MenuPanel.swift */
+"Update Awake helper" = "Update Awake helper";
+
+/* AwakeApp/AwakeApp.swift */
+"Update available" = "Update available";
+
+/* AwakeApp/AwakeApp.swift */
+"Update incomplete" = "Update incomplete";
+
+/* AwakeApp/AppModel.swift */
+"Update postponed until current sessions end." = "Update postponed until current sessions end.";
+
+/* AwakeApp/AppModel.swift */
+"Update postponed. Please try again later." = "Update postponed. Please try again later.";
+
+/* AwakeApp/AppModel.swift */
+"Update the Awake helper to use the new sleep settings. macOS approval is required." = "Update the Awake helper to use the new sleep settings. macOS approval is required.";
+
+/* AwakeApp/SettingsView.swift */
+"Use Touch ID for sudo commands on this Mac." = "Use Touch ID for sudo commands on this Mac.";
+
+/* AwakeApp/AppModel.swift */
+"Use a battery floor from 0 to %lld%% and a positive, finite duration." = "Use a battery floor from 0 to %lld%% and a positive, finite duration.";
+
+/* AwakeCLI/CommandOptions.swift */
+"Use an ISO 8601 date with a timezone, for example 2026-10-01T18:00:00+02:00." = "Use an ISO 8601 date with a timezone, for example 2026-10-01T18:00:00+02:00.";
+
+/* AwakeApp/Presentation.swift */
+"Verifying protection" = "Verifying protection";
+
+/* AwakeApp/MenuPanel.swift */
+"Waiting for PID %@" = "Waiting for PID %@";
+
+/* AwakeApp/Presentation.swift */
+"Waiting for power" = "Waiting for power";
+
+/* AwakeCLI/AwakeCLI.swift */
+"Warning: custom battery protection is disabled (%lld%%)." = "Warning: custom battery protection is disabled (%lld%%).";
+
+/* AwakeApp/MenuPanel.swift */
+"When a process ends…" = "When a process ends…";
+
+/* AwakeApp/SettingsView.swift */
+"While Awake is active" = "While Awake is active";
+
+/* AwakeApp/AppModel.swift */
+"Your Mac needs to cool down before a new session can start." = "Your Mac needs to cool down before a new session can start.";
+
+/* AwakeApp/AppModel.swift */
+"Your Mac stays awake while open. Closing the lid works normally." = "Your Mac stays awake while open. Closing the lid works normally.";
+
+/* AwakeApp/SettingsView.swift */
+"battery" = "battery";
+
+/* AwakeApp/Presentation.swift */
+"days" = "days";
+
+/* AwakeApp/Presentation.swift */
+"hours" = "hours";
+
+/* AwakeApp/Presentation.swift */
+"macOS did not confirm activation. No new session will start until you rearm." = "macOS did not confirm activation. No new session will start until you rearm.";
+
+/* AwakeApp/Presentation.swift */
+"macOS did not provide a usable state. Retry only after the reading is available." = "macOS did not provide a usable state. Retry only after the reading is available.";
+
+/* AwakeApp/Presentation.swift */
+"minutes" = "minutes";
+
+/* AwakeCLI/CommandOptions.swift */
+"run requires -- command; watch requires --pid ID." = "run requires -- command; watch requires --pid ID.";
+
+/* AwakeCLI/CommandOptions.swift */
+"run requires -- followed by a command." = "run requires -- followed by a command.";
+
+/* AwakeApp/Presentation.swift */
+"seconds" = "seconds";
+
+/* AwakeCLI/CommandOptions.swift */
+"watch requires one positive process ID greater than 1." = "watch requires one positive process ID greater than 1.";

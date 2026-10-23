@@ -27,7 +27,7 @@ struct MenuPanel: View {
             .frame(height: min(contentHeight.wrappedValue, maximumBodyHeight))
             Divider()
             HStack(spacing: 8) {
-                Text("Awake \(AwakeIdentity.version) · MIT")
+                Text(verbatim: "Awake \(AwakeIdentity.version) · MIT")
                     .font(.caption2).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
                 Link(destination: URL(string: "https://github.com/oviron/Awake")!) {
@@ -54,7 +54,7 @@ struct MenuPanel: View {
             HStack(spacing: 10) {
                 Image(nsImage: BrandArt.appIcon(size: 64)).resizable()
                     .frame(width: 32, height: 32).accessibilityHidden(true)
-                Text("Awake").font(.system(size: 21, weight: .semibold))
+                Text(verbatim: "Awake").font(.system(size: 21, weight: .semibold))
                 Spacer()
             }
             statusOverview
@@ -95,7 +95,7 @@ struct MenuPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label(
-                    model.presentation?.title ?? "Setup required",
+                    model.presentation?.title ?? String(localized: "Setup required"),
                     systemImage: model.presentation?.symbol ?? "moon.zzz"
                 )
                 .font(.callout.weight(.semibold))
@@ -151,10 +151,7 @@ struct MenuPanel: View {
                 StopEditor(model: model)
             }
             if model.showsTaskCount {
-                Label(
-                    "\(model.taskCount) tracked \(model.taskCount == 1 ? "task" : "tasks")",
-                    systemImage: "terminal"
-                ).font(.caption)
+                Label("\(model.taskCount) tracked tasks", systemImage: "terminal").font(.caption)
             }
             if let processes = model.watchedProcesses, !processes.isEmpty {
                 ScrollView {
@@ -214,7 +211,7 @@ private struct StopEditor: View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("Duration", selection: $model.stopChoice) {
                 ForEach(SessionEnd.presetMinutes, id: \.self) { minutes in
-                    Text(minutes < 60 ? "\(minutes) min" : "\(minutes / 60) h")
+                    (minutes < 60 ? Text("\(minutes) min") : Text("\(minutes / 60) h"))
                         .tag(StopChoice.preset(minutes))
                 }
                 Text("Until turned off").tag(StopChoice.unlimited)
@@ -229,7 +226,7 @@ private struct StopEditor: View {
                     TextField("Duration", value: $model.customDuration, format: .number)
                         .textFieldStyle(.roundedBorder).accessibilityLabel("Duration")
                     Picker("Unit", selection: $model.durationUnit) {
-                        ForEach(DurationUnit.allCases) { unit in Text(unit.rawValue).tag(unit) }
+                        ForEach(DurationUnit.allCases) { unit in Text(unit.label).tag(unit) }
                     }.labelsHidden().fixedSize()
                 }
             case .date:
@@ -285,15 +282,17 @@ private struct StopEditor: View {
             .frame(height: 120)
             .overlay {
                 if model.processes.isEmpty {
-                    Text(model.processListError ?? "No processes available")
+                    Text(model.processListError ?? String(localized: "No processes available"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             HStack {
                 Text("PIDs").font(.callout)
-                TextField("697;660;9931", text: $model.processID)
-                    .textFieldStyle(.roundedBorder).accessibilityLabel(
-                        "Process IDs, separated by semicolons")
+                TextField(text: $model.processID, prompt: Text(verbatim: "697;660;9931")) {
+                    Text("PIDs")
+                }
+                .textFieldStyle(.roundedBorder).accessibilityLabel(
+                    "Process IDs, separated by semicolons")
             }
         }
     }

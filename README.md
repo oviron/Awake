@@ -4,10 +4,10 @@ A native Swift menu-bar application for macOS 14+, Intel and Apple Silicon.
 Awake is based on [Limitless](https://github.com/leboonducoin/Limitless).
 See [UPSTREAM.md](UPSTREAM.md) for the exact imported revision and license.
 
-The first published build is a **development preview**, ad-hoc signed. It can
-display the interface but cannot enable the administrator helper or keep a
-closed MacBook awake. A functional signed distribution and physical acceptance
-checks remain pending. [Development releases](https://github.com/oviron/Awake/releases).
+[Releases](https://github.com/oviron/Awake/releases) from 0.3.0 are **community
+builds**: signed with the maintainer's own certificate, not notarized by Apple.
+Installed copies update only to builds with the same signature. See
+[installation](docs/distribution.md). Physical acceptance checks remain pending.
 
 ## Behavior
 
@@ -24,6 +24,8 @@ checks remain pending. [Development releases](https://github.com/oviron/Awake/re
   CLI integration and update source; original licenses remain unchanged.
 - Screen locking remains under macOS control; Awake does not synthesize
   layout-dependent lock-screen shortcuts.
+- English and Russian, chosen from the macOS language order. Adding a language
+  is a folder of strings files: see [Localization](Localization/README.md).
 
 Thermal pressure is Apple's coarse system reading, not a temperature sensor or a
 promise that a closed laptop can safely run in an enclosed space.
@@ -39,6 +41,7 @@ with Apple's Command Line Tools. No package dependencies are downloaded.
 
 ```sh
 swift Tools/ProjectTool.swift check
+swift Tools/ProjectTool.swift strings
 swift Tools/ProjectTool.swift asan
 swift Tools/ProjectTool.swift tsan
 swift Tools/ProjectTool.swift bundle
@@ -49,7 +52,8 @@ The check builds all executables, runs unit/integration doubles, checks Swift
 formatting and validates distribution and signature rejection logic. None of
 these commands installs a helper or changes system sleep or sudo settings.
 A development `.app` is ad-hoc signed and rejects privileged operations.
-The preview is inert, has a separate identity and exports a native panel PNG.
+The preview is inert, has a separate identity and exports a native panel PNG
+per language. `strings` regenerates the English base after text changes.
 
 For a chosen output directory, set `AWAKE_OUTPUT_DIR` to a new path. For the
 installed application's release artifact, follow [distribution](docs/distribution.md).
@@ -66,6 +70,8 @@ a signed distributable release still requires a signing identity.
   and rejection of start requests by the helper while thermal state is unsafe.
 - Preserved existing timer, process identity, ownership, restoration, installer,
   updater and authorization tests; added thermal regressions.
+- Localized the app, the Touch ID component and the CLI; English strings are
+  extracted from the sources by the compiler and checked against each translation.
 
 ## Acceptance still required
 

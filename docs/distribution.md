@@ -2,11 +2,11 @@
 
 **macOS 14+ · Intel & Apple Silicon**
 
-The first release is an ad-hoc development preview. It cannot enable the helper.
-The steps below describe a future signed distribution; use
-[the README](../README.md) for development checks.
+Releases are community builds: signed with the maintainer's own certificate and
+not notarized by Apple, so macOS blocks the first launch (see the end of this
+section). The archive's SHA-256 is in `SHA256SUMS` next to it.
 
-1. When a signed release is available, download it from [GitHub Releases](https://github.com/oviron/Awake/releases).
+1. Download `Awake-<version>-universal.zip` from the latest [GitHub release](https://github.com/oviron/Awake/releases/latest).
 2. Unzip it, drag **Awake.app** to **Applications** and open it.
 3. Click its menu-bar icon, then **Enable Awake**. Approve the macOS prompt.
 

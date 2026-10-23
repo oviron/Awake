@@ -54,14 +54,14 @@ enum PowerPresentation: Equatable {
 
     var title: String {
         switch self {
-        case .active: "Staying awake"
-        case .inactive: "Ready when you are"
-        case .suspended: "Waiting for power"
-        case .recovering: "Verifying protection"
-        case .restoring: "Restoring normal sleep"
-        case .attention: "Power needs attention"
-        case .unknown: "State unavailable"
-        case .cooling: "Cooling down"
+        case .active: String(localized: "Staying awake")
+        case .inactive: String(localized: "Ready when you are")
+        case .suspended: String(localized: "Waiting for power")
+        case .recovering: String(localized: "Verifying protection")
+        case .restoring: String(localized: "Restoring normal sleep")
+        case .attention: String(localized: "Power needs attention")
+        case .unknown: String(localized: "State unavailable")
+        case .cooling: String(localized: "Cooling down")
         }
     }
 
@@ -120,14 +120,22 @@ enum DurationUnit: String, CaseIterable, Identifiable {
         case .days: 86_400
         }
     }
+    var label: String {
+        switch self {
+        case .seconds: String(localized: "seconds")
+        case .minutes: String(localized: "minutes")
+        case .hours: String(localized: "hours")
+        case .days: String(localized: "days")
+        }
+    }
 }
 
 extension PowerMode {
     var label: String {
         switch self {
-        case .all: "Both"
-        case .battery: "Battery"
-        case .external: "Power adapter"
+        case .all: String(localized: "Both")
+        case .battery: String(localized: "Battery")
+        case .external: String(localized: "Power adapter")
         }
     }
 }
@@ -135,9 +143,9 @@ extension PowerMode {
 extension PowerSource {
     var label: String {
         switch self {
-        case .battery: "Battery"
-        case .external: "Power adapter"
-        case .unknown: "Power source unknown"
+        case .battery: String(localized: "Battery")
+        case .external: String(localized: "Power adapter")
+        case .unknown: String(localized: "Power source unknown")
         }
     }
     var symbol: String {
@@ -153,19 +161,38 @@ extension SleepFault {
     var guidance: String {
         switch self {
         case .foreignHold:
-            "Another tool already disabled sleep. Restore its setting before rearming Awake."
+            String(
+                localized:
+                    "Another tool already disabled sleep. Restore its setting before rearming Awake."
+            )
         case .interrupted:
-            "A previous session was interrupted. Confirm restoration, then rearm to start a new session."
+            String(
+                localized:
+                    "A previous session was interrupted. Confirm restoration, then rearm to start a new session."
+            )
         case .unreadableState:
-            "macOS did not provide a usable state. Retry only after the reading is available."
+            String(
+                localized:
+                    "macOS did not provide a usable state. Retry only after the reading is available."
+            )
         case .journalFailure:
-            "Awake could not record ownership safely. Check the installation before trying again."
+            String(
+                localized:
+                    "Awake could not record ownership safely. Check the installation before trying again."
+            )
         case .activationFailed:
-            "macOS did not confirm activation. No new session will start until you rearm."
+            String(
+                localized:
+                    "macOS did not confirm activation. No new session will start until you rearm.")
         case .recoveryExhausted:
-            "Repeated external changes exhausted recovery. Resolve the conflict before rearming."
+            String(
+                localized:
+                    "Repeated external changes exhausted recovery. Resolve the conflict before rearming."
+            )
         case .restorationFailed, .restorationPending:
-            "Sleep restoration is not confirmed. Retry restoration and check the result."
+            String(
+                localized:
+                    "Sleep restoration is not confirmed. Retry restoration and check the result.")
         }
     }
 }

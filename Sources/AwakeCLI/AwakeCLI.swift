@@ -20,8 +20,13 @@ struct AwakeCLI {
                 try AgentSetup.configure(provider, remove: remove)
                 print(
                     remove
-                        ? "Awake integration removed from \(provider)."
-                        : "Awake is ready for \(provider). Restart your agent and approve its hooks if asked."
+                        ? String(
+                            localized: "Awake integration removed from \(provider).", bundle: .awake
+                        )
+                        : String(
+                            localized:
+                                "Awake is ready for \(provider). Restart your agent and approve its hooks if asked.",
+                            bundle: .awake)
                 )
             case .status(let json):
                 let client = try await ServiceClient(role: .task)
@@ -35,16 +40,33 @@ struct AwakeCLI {
                         print(String(decoding: try encoder.encode(status), as: UTF8.self))
                     } else {
                         print(
-                            "Awake: \(status.sleep.phase.rawValue); observed sleep flag: \(status.sleep.observed.rawValue)"
+                            String(
+                                localized:
+                                    "Awake: \(status.sleep.phase.rawValue); observed sleep flag: \(status.sleep.observed.rawValue)",
+                                bundle: .awake)
                         )
                         print(
-                            "Power: \(status.power.source.rawValue); mode: \(status.policy.mode.flag); battery floor: \(status.policy.batteryFloor)%"
+                            String(
+                                localized:
+                                    "Power: \(status.power.source.rawValue); mode: \(status.policy.mode.flag); battery floor: \(status.policy.batteryFloor)%",
+                                bundle: .awake)
                         )
                         print(
-                            "Sessions: \(status.sessions.count); automation: \(status.policy.allowsAutomation ? "allowed" : "disabled")"
+                            status.policy.allowsAutomation
+                                ? String(
+                                    localized:
+                                        "Sessions: \(status.sessions.count); automation: allowed",
+                                    bundle: .awake)
+                                : String(
+                                    localized:
+                                        "Sessions: \(status.sessions.count); automation: disabled",
+                                    bundle: .awake)
                         )
                         if let fault = status.sleep.fault {
-                            print("Action required: \(fault.rawValue)")
+                            print(
+                                String(
+                                    localized: "Action required: \(fault.rawValue)", bundle: .awake)
+                            )
                         }
                     }
                     await client.close()
@@ -81,11 +103,17 @@ struct AwakeCLI {
                 try FileHandle.standardOutput.close()
             }
             if max(request.batteryFloor ?? 0, status.policy.batteryFloor) == 0 {
-                report("Warning: custom battery protection is disabled (0%).")
+                report(
+                    String(
+                        localized: "Warning: custom battery protection is disabled (\(0)%).",
+                        bundle: .awake))
             }
             if let reason = session.suspension {
                 report(
-                    "Keep-awake is suspended: \(reason.rawValue). The task still runs under your limits."
+                    String(
+                        localized:
+                            "Keep-awake is suspended: \(reason.rawValue). The task still runs under your limits.",
+                        bundle: .awake)
                 )
             }
             if let process, !process.isAlive {
@@ -108,11 +136,17 @@ struct AwakeCLI {
                         else {
                             protectionEnded = true
                             report(
-                                "The keep-awake session ended. The task may continue; protection will not restart."
+                                String(
+                                    localized:
+                                        "The keep-awake session ended. The task may continue; protection will not restart.",
+                                    bundle: .awake)
                             )
                             if let fault = current.status?.sleep.fault {
                                 report(
-                                    "Restoration needs attention: \(fault.rawValue). Check the app's observed state."
+                                    String(
+                                        localized:
+                                            "Restoration needs attention: \(fault.rawValue). Check the app's observed state.",
+                                        bundle: .awake)
                                 )
                             }
                             await client.close()
@@ -123,7 +157,10 @@ struct AwakeCLI {
                     guard !Task.isCancelled && !protectionEnded else { return }
                     protectionEnded = true
                     report(
-                        "Keep-awake connection lost. The task continues without reacquiring protection."
+                        String(
+                            localized:
+                                "Keep-awake connection lost. The task continues without reacquiring protection.",
+                            bundle: .awake)
                     )
                     await client.close()
                 }
@@ -199,12 +236,18 @@ struct AwakeCLI {
                 || (status.sessions.isEmpty && status.sleep.restorationPending)
             {
                 report(
-                    "The task ended, but power restoration needs attention. Check Awake's observed state."
+                    String(
+                        localized:
+                            "The task ended, but power restoration needs attention. Check Awake's observed state.",
+                        bundle: .awake)
                 )
             }
         } catch {
             report(
-                "The task ended; restoration could not be confirmed. Check Awake's observed state."
+                String(
+                    localized:
+                        "The task ended; restoration could not be confirmed. Check Awake's observed state.",
+                    bundle: .awake)
             )
         }
         await client.close()
@@ -217,40 +260,48 @@ struct AwakeCLI {
     private static func message(for error: any Error) -> String {
         if case CLIError.usage(let reason) = error { return reason }
         if error is SignatureError {
-            return
-                "A correctly signed Awake installation is required. The command was not launched."
+            return String(
+                localized:
+                    "A correctly signed Awake installation is required. The command was not launched.",
+                bundle: .awake)
         }
         if let error = error as? ServiceError {
-            return
-                "Service refused the request (\(error.rawValue)). Check Awake and its automation limits."
+            return String(
+                localized:
+                    "Service refused the request (\(error.rawValue)). Check Awake and its automation limits.",
+                bundle: .awake)
         }
-        if let error = error as? WorkError { return "Cannot follow this work: \(error)." }
-        return "Operation failed: \(error.localizedDescription)"
+        if let error = error as? WorkError {
+            return String(
+                localized: "Cannot follow this work: \(String(describing: error)).", bundle: .awake)
+        }
+        return String(localized: "Operation failed: \(error.localizedDescription)", bundle: .awake)
     }
 
-    private static let help = """
-        Awake — keep awake for explicitly tracked work.
+    private static let help = String(
+        localized: """
+            Awake — keep awake for explicitly tracked work.
 
-        Usage:
-          awake status [--json]
-          awake run [options] -- command [arguments...]
-          awake watch [options] --pid ID
-          awake setup codex|claude|cursor|gemini [--remove]
-          awake hook codex|claude|cursor|gemini|other   (lifecycle JSON on stdin)
-          awake --version
+            Usage:
+              awake status [--json]
+              awake run [options] -- command [arguments...]
+              awake watch [options] --pid ID
+              awake setup codex|claude|cursor|gemini [--remove]
+              awake hook codex|claude|cursor|gemini|other   (lifecycle JSON on stdin)
+              awake --version
 
-        Options:
-          -b | -c | -a          Battery only, AC only, or both (mutually exclusive).
-          --battery-floor N    Integer 0–80; 0 disables custom protection with warning.
-          --for DURATION       Positive duration: 30s, 90m, 2h, 1.5d.
-          --until ISO8601      Stop at a date/time with an explicit timezone.
-          --unlimited          No task duration limit (the default).
+            Options:
+              -b | -c | -a          Battery only, AC only, or both (mutually exclusive).
+              --battery-floor N    Integer 0–80; 0 disables custom protection with warning.
+              --for DURATION       Positive duration: 30s, 90m, 2h, 1.5d.
+              --until ISO8601      Stop at a date/time with an explicit timezone.
+              --unlimited          No task duration limit (the default).
 
-        The app must authorize automation first. Requests can only narrow its limits.
-        Protection ends when the command/process exits, a limit is reached, or the
-        connection is lost. The command itself is not killed when protection expires.
-        run preserves the command's exit code and standard streams. Ctrl-C forwards
-        an interrupt and releases this session. watch never signals the observed PID.
-        No command is sent to the administrator helper. No automatic reacquisition.
-        """
+            The app must authorize automation first. Requests can only narrow its limits.
+            Protection ends when the command/process exits, a limit is reached, or the
+            connection is lost. The command itself is not killed when protection expires.
+            run preserves the command's exit code and standard streams. Ctrl-C forwards
+            an interrupt and releases this session. watch never signals the observed PID.
+            No command is sent to the administrator helper. No automatic reacquisition.
+            """, bundle: .awake)
 }

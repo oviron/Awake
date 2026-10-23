@@ -115,15 +115,20 @@ public enum UpdateError: Error, LocalizedError, Equatable, Sendable {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidRelease: "GitHub did not provide a valid Awake release."
-        case .invalidArchive: "The update archive failed verification."
-        case .untrustedBuild: "The update must be signed by the same certificate as this app."
-        case .unsafeLocation: "Move Awake to a writable Applications folder before updating."
-        case .busy: "Close the running Awake app before replacing it."
-        case .failed: "The update could not be completed. Reopen Awake or retry."
+        case .invalidRelease: String(localized: "GitHub did not provide a valid Awake release.")
+        case .invalidArchive: String(localized: "The update archive failed verification.")
+        case .untrustedBuild:
+            String(localized: "The update must be signed by the same certificate as this app.")
+        case .unsafeLocation:
+            String(localized: "Move Awake to a writable Applications folder before updating.")
+        case .busy: String(localized: "Close the running Awake app before replacing it.")
+        case .failed: String(localized: "The update could not be completed. Reopen Awake or retry.")
         case .rateLimited(let until):
-            "GitHub's request limit was reached. Try again after \(until.formatted(date: .omitted, time: .shortened))."
-        case .httpStatus(let status): "GitHub returned HTTP \(status)."
+            String(
+                localized:
+                    "GitHub's request limit was reached. Try again after \(until.formatted(date: .omitted, time: .shortened))."
+            )
+        case .httpStatus(let status): String(localized: "GitHub returned HTTP \(status).")
         }
     }
 }

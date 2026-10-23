@@ -35,7 +35,8 @@ swift Tools/ProjectTool.swift preview
 ```
 
 Open the **Awake.app** path printed at the end. This is an inert preview,
-with a PNG beside it. It cannot keep the Mac awake or install the helper.
+with a PNG per language beside it (`menu-preview.png` for English,
+`menu-preview-ru.png` and so on). It cannot keep the Mac awake or install the helper.
 Previews use a separate app identity so they do not replace Awake in macOS settings.
 For the setup screen instead:
 
@@ -45,8 +46,11 @@ env AWAKE_PREVIEW_STATE=setup swift Tools/ProjectTool.swift bundle
 
 Other previews: `inactive`, `thermal`, `process`, `desktop`, `external`, `battery-unknown`, `battery-low`,
 `touch-id-external` and `touch-id-permission`. Check light/dark mode, Tab navigation, VoiceOver and
-Reduce Motion/Transparency. Check that content stays within the menu on first opening and when
-Automatic updates changes or an Update button appears. Keyboard input must follow the Mac's
+Reduce Motion/Transparency. Check every language: text must fit the menu
+without clipping. To open the preview in another language, run
+`Awake.app/Contents/MacOS/AwakeApp -AppleLanguages '(ru)'`. Check that content
+stays within the menu on first opening and when Automatic updates changes or an
+Update button appears. Keyboard input must follow the Mac's
 layout and locale.
 
 ## Test the installed app
