@@ -16,6 +16,7 @@ how to verify them.
 - Helper activation enables launch at login. Users can disable it independently.
 - Updates default on after helper approval: check every 8 hours and install immediately while idle.
 - Optional Touch ID for sudo, native administrator consent and complete uninstall.
+- Every user-facing string localized; the language follows macOS, English is the fallback.
 
 The sleep flag is global. Restore only state owned by Awake. Stop, battery
 protection, thermal cutoff, deadlines and owner loss take priority over recovery. Never resume a

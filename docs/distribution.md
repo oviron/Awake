@@ -32,9 +32,8 @@ next launch. Launch at login opens the app without starting a session.
 
 **Integrations** contains CLI/AI access and Touch ID for sudo. Launch at login and
 updates remain separate app settings. The display may dim and lock normally.
-Sessions do not resume automatically after a battery or thermal cutoff. After
-upgrading from 0.1, click **Update Awake helper** and approve the macOS prompt.
-Old preferences default the new lid rule to off.
+Sessions do not resume automatically after a battery or thermal cutoff. If the menu
+shows **Update Awake helper**, click it and approve the macOS prompt.
 
 If macOS blocks opening, use **System Settings → Privacy & Security → Open Anyway**
 when offered. [Apple's instructions](https://support.apple.com/en-gb/102445).

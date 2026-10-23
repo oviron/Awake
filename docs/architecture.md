@@ -9,7 +9,8 @@
 | AwakeHelper | Privileged sleep operations and watchdog |
 | AwakeSudo / AwakeSudoHelper | Separate sudo setup and privileged PAM changes |
 
-Swift throughout. No package dependencies, database or analytics.
+Swift throughout. No package dependencies, database or analytics. User-facing
+text lives in `Localization/` ([guide](../Localization/README.md)).
 
 ## Sessions
 

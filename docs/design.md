@@ -6,7 +6,7 @@ separate preferences window. Content sets the height; long lists scroll.
 - 21-point title. Battery and remaining time share the callout size.
 - Standard square menu-bar item: 21-point loop, 5-point orange dot below/right.
 - macOS restores the menu-bar position after the user moves the item with Command-drag.
-- Small footer: version, blue author link, MIT and GitHub.
+- Small footer: version, MIT and the GitHub link.
 - Immediate settings, one Stop button, outside-click dismissal.
 - Right-click Check for Updates/Quit/Uninstall follows the app's light/dark appearance; red destructive confirmation.
 - Timer and remaining PIDs refresh each second without animation.
@@ -18,7 +18,8 @@ separate preferences window. Content sets the height; long lists scroll.
 Hide unavailable controls before helper approval. Enable launch at login after helper
 activation, then respect the user's choice. Login never starts a keep-awake session.
 Hide power controls on desktops and the battery limit in adapter mode. Zero warns.
-Keep the power-source label above its segmented control so it fits the fixed menu width.
+Keep the power-source label above its segmented control; when a language's labels
+do not fit the fixed width, the control becomes a pop-up menu.
 Battery limit accepts digits only, with the one-percent arrows beside the field.
 Values above 80 become 80. Return or leaving the field applies it.
 Explain a blocked start or battery cutoff beside the session controls, with a red warning symbol.
@@ -36,8 +37,9 @@ Permission refusals name the sudo helper's entry and include an orange Full Disk
 Access button. It opens only System Settings.
 Keep the observed toggle state and the helper connection.
 
-Native previews are inert. Check light/dark appearance, keyboard, VoiceOver,
-contrast and reduced motion for each release. [Testing](testing.md).
+Every language must fit the menu without clipping; shorten a translation before
+widening a control. Native previews are inert. Check light/dark appearance,
+keyboard, VoiceOver, contrast and reduced motion for each release. [Testing](testing.md).
 
 Keep the translucent native material on macOS 14 and later. Use Liquid Glass
 controls on macOS 26+, with standard controls on older versions. Accessibility

@@ -55,22 +55,19 @@ A development `.app` is ad-hoc signed and rejects privileged operations.
 The preview is inert, has a separate identity and exports a native panel PNG
 per language. `strings` regenerates the English base after text changes.
 
-For a chosen output directory, set `AWAKE_OUTPUT_DIR` to a new path. For the
-installed application's release artifact, follow [distribution](docs/distribution.md).
-That path requires a clean committed source tree and a valid signing identity;
-a signed distributable release still requires a signing identity.
+For a chosen output directory, set `AWAKE_OUTPUT_DIR` to a new path. A release
+build (`community-sign`, `community-package`) needs a clean committed source tree
+and the signing certificate; installation is in [distribution](docs/distribution.md).
 
 ## Changes from the imported source
 
-- Renamed the products, bundle IDs, CLI, journal and integration paths to Awake.
-- Directed release downloads to `oviron/Awake`, preserving signature and
-  source-revision verification.
-- Added thermal pressure to service telemetry and wire version 11.
-- Added permanent thermal cutoff, visible feedback, disabled starts while hot,
-  and rejection of start requests by the helper while thermal state is unsafe.
-- Preserved existing timer, process identity, ownership, restoration, installer,
-  updater and authorization tests; added thermal regressions.
-- Localized the app, the Touch ID component and the CLI; English strings are
+- Products, bundle IDs, CLI, journal and integration paths are named Awake.
+- Updates come from `oviron/Awake` releases, with signature and source-revision
+  verification.
+- Thermal pressure is part of service telemetry. Unsafe readings end sessions
+  permanently, show feedback and make the helper reject new starts.
+- Closed-lid protection is a separate rule of the current session, off by default.
+- The app, the Touch ID component and the CLI are localized; English strings are
   extracted from the sources by the compiler and checked against each translation.
 
 ## Acceptance still required
