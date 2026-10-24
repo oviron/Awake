@@ -57,7 +57,9 @@ per language. `strings` regenerates the English base after text changes.
 
 For a chosen output directory, set `AWAKE_OUTPUT_DIR` to a new path. A release
 build (`community-sign`, `community-package`) needs a clean committed source tree
-and the signing certificate; installation is in [distribution](docs/distribution.md).
+and the signing certificate. `AWAKE_SIGNING_KEYCHAIN` names the keychain file that
+holds it, so the user's keychain search list stays untouched; installation is in
+[distribution](docs/distribution.md).
 
 ## Changes from the imported source
 

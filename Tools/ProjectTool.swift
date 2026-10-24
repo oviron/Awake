@@ -886,6 +886,7 @@ do {
         ?? run("/usr/bin/xcode-select", ["-p"], capture: true)
     let team = ProcessInfo.processInfo.environment["AWAKE_TEAM_ID"] ?? ""
     let certificate = ProcessInfo.processInfo.environment["AWAKE_SIGNING_IDENTITY"] ?? ""
+    let signingKeychain = ProcessInfo.processInfo.environment["AWAKE_SIGNING_KEYCHAIN"]
     let identity: ReleaseIdentity =
         community ? .community(certificate: certificate) : .developerID(team: team)
     let sourceRevision = signing ? try cleanRevision() : nil
@@ -1153,7 +1154,8 @@ do {
         let signature = signing ? certificate : "-"
         let signingOptions =
             signing
-            ? ["--options", "runtime", community ? "--timestamp=none" : "--timestamp"] : []
+            ? ["--options", "runtime", community ? "--timestamp=none" : "--timestamp"]
+                + (signingKeychain.map { ["--keychain", $0] } ?? []) : []
         for (path, identifier) in [
             ("MacOS/awake", "io.github.oviron.Awake.cli"),
             (identity.helperPath, "io.github.oviron.Awake.helper"),
